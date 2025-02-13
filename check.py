@@ -240,61 +240,96 @@ def default_page():
         files = get_github_files(f"{BASE_PATH}/{selected_room}")
         media_files = [f for f in files if f['name'] != 'info.txt']
         
+        
         if media_files:
             st.markdown("### Media Files")
             
-            # Add custom CSS for horizontal scrolling
+            # Add custom CSS for scrolling animation
             st.markdown("""
                 <style>
-                .scroll-container {
-                    overflow-x: auto;
-                    white-space: nowrap;
-                    padding: 10px 0;
+                @keyframes slide {
+                    0% { transform: translateX(0%); }
+                    100% { transform: translateX(-50%); }
                 }
+                
+                .scroll-container {
+                    width: 100%;
+                    overflow: hidden;
+                    white-space: nowrap;
+                    position: relative;
+                    padding: 15px 0;
+                }
+                
+                .scroller {
+                    display: inline-block;
+                    animation: slide 20s linear infinite;
+                }
+                
                 .scroll-item {
                     display: inline-block;
-                    margin-right: 10px;
-                    vertical-align: top;
+                    margin: 0 15px;
+                    vertical-align: middle;
+                    transition: transform 0.3s ease;
                 }
+                
+                .scroll-item:hover {
+                    transform: scale(1.05);
+                }
+                
                 .scroll-item img, .scroll-item video {
                     max-height: 200px;
-                    border-radius: 8px;
-                    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+                    border-radius: 10px;
+                    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+                }
+                
+                /* Mobile touch scrolling */
+                @media (max-width: 768px) {
+                    .scroll-container {
+                        overflow-x: auto;
+                        -webkit-overflow-scrolling: touch;
+                    }
+                    .scroller {
+                        animation: none;
+                    }
                 }
                 </style>
             """, unsafe_allow_html=True)
             
-            # Create scrolling container
+            # Create scrolling content
             with st.container():
-                scroll_html = "<div class='scroll-container'>"
-                for file in media_files:
+                # Duplicate content for seamless looping
+                double_files = media_files * 2
+                
+                scroll_html = """
+                <div class="scroll-container">
+                    <div class="scroller">
+                """
+                
+                for file in double_files:
                     file_url = file['download_url']
                     file_ext = file['name'].split('.')[-1].lower()
+                    
                     if file_ext in ['mp4', 'webm', 'ogg']:
                         scroll_html += f"""
-                            <div class='scroll-item'>
-                                <video controls width='300'>
-                                    <source src='{file_url}' type='video/{file_ext}'>
+                            <div class="scroll-item">
+                                <video controls width="300">
+                                    <source src="{file_url}" type="video/{file_ext}">
                                 </video>
                             </div>
                         """
                     else:
                         scroll_html += f"""
-                            <div class='scroll-item'>
-                                <img src='{file_url}' style='max-width: 300px;'>
+                            <div class="scroll-item">
+                                <img src="{file_url}" style="max-width: 300px;">
                             </div>
                         """
-                scroll_html += "</div>"
+                
+                scroll_html += """
+                    </div>
+                </div>
+                """
+                
                 st.markdown(scroll_html, unsafe_allow_html=True)
-            
-            # Add auto-refresh every 5 seconds for animation effect
-            st.markdown("""
-                <script>
-                setTimeout(function(){
-                    window.location.reload();
-                }, 5000);
-                </script>
-            """, unsafe_allow_html=True)
 
 # Main App
 def main():
