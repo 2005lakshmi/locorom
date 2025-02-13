@@ -251,7 +251,7 @@ def default_page():
 
 
     if filtered_rooms:
-        st.write("# ***Select Room***")
+        st.write("***Select Room***")
         selected_room = st.selectbox("Select Room", filtered_rooms)
         st.subheader(f"Room : {selected_room}")
 
