@@ -219,42 +219,40 @@ def admin_page():
 
 
 
-# Default Page
-# Update the media display section in default_page function
 def default_page():
-    st.markdown("<h1 style='text-align: center; color: #4B0082; font-family: Arial;'>🔍 Search Room</h1>", 
-                unsafe_allow_html=True)
-    
+    st.markdown(
+        "<h1 style='text-align: center; color: #4B0082; font-family: Arial;'>🔍 Search Room</h1>", 
+        unsafe_allow_html=True
+    )
+
+    # Fetch room names from GitHub
     rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
     search_term = st.text_input("Search Rooms", "").lower()
     filtered_rooms = [room for room in rooms if search_term in room.lower()]
-    
+
     if filtered_rooms:
         selected_room = st.selectbox("Select a Room", filtered_rooms)
         st.subheader(selected_room)
-        
-        # Display info.txt
+
+        # Display room info from info.txt
         info_content = get_room_info(selected_room)
         st.markdown(f"**Room Information:**\n{info_content}")
-        
-        # Display media files
+
+        # Fetch media files for the selected room (ignoring info.txt)
         files = get_github_files(f"{BASE_PATH}/{selected_room}")
         media_files = [f for f in files if f['name'] != 'info.txt']
-        
-        # Add this import at the top of your file with other imports
-        import streamlit.components.v1 as components
-
 
         if media_files:
             st.markdown("### Media Files")
-            
-            # Add custom CSS/JS for carousel
-            components.html("""
+
+            # Inject custom CSS for Swiper (carousel) styling
+            components.html(
+                """
                 <link rel="stylesheet" href="https://unpkg.com/swiper@8.0.7/swiper-bundle.min.css">
                 <style>
                     .swiper {
                         width: 100%;
-                        height: 100%;
+                        height: auto;
                     }
                     .swiper-slide {
                         text-align: center;
@@ -262,39 +260,49 @@ def default_page():
                         justify-content: center;
                         align-items: center;
                     }
-                    .swiper-slide img {
+                    .swiper-slide img, .swiper-slide video {
                         max-height: 400px;
                         border-radius: 10px;
+                        box-shadow: 0px 5px 15px rgba(0,0,0,0.2);
                     }
                     .swiper-pagination-fraction {
-                        color: white;
+                        font-size: 18px;
                         font-weight: bold;
+                        color: white;
                         text-shadow: 0 0 5px rgba(0,0,0,0.5);
                     }
                 </style>
-            """, height=0)
-    
-            # Create carousel HTML
+                """, 
+                height=0
+            )
+
+            # Build the carousel HTML using the media files
+            carousel_items = ""
+            for file in media_files:
+                ext = file['name'].split('.')[-1].lower()
+                if ext == "mp4":
+                    media_html = f"""
+                        <video controls style="max-height: 400px;">
+                            <source src="{file['download_url']}" type="video/mp4">
+                        </video>
+                    """
+                else:
+                    media_html = f'<img src="{file["download_url"]}" style="max-height: 400px;" />'
+                carousel_items += f'<div class="swiper-slide">{media_html}</div>'
+
             carousel_html = f"""
             <div class="swiper mySwiper">
                 <div class="swiper-wrapper">
-                    {"".join([
-                        f'''<div class="swiper-slide">
-                            {'<video controls style="max-height: 400px;">' if file['name'].split('.')[-1] in ['mp4'] else '<img style="max-height: 400px;">'}
-                                <source src="{file['download_url']}" type="{'video/mp4' if file['name'].endswith('.mp4') else 'image/jpeg'}">
-                            {'</video>' if file['name'].split('.')[-1] in ['mp4'] else '</img>'}
-                            </div>''' 
-                        for file in media_files
-                    ])}
+                    {carousel_items}
                 </div>
                 <div class="swiper-pagination"></div>
                 <div class="swiper-button-next"></div>
                 <div class="swiper-button-prev"></div>
             </div>
-    
+            
             <script src="https://unpkg.com/swiper@8.0.7/swiper-bundle.min.js"></script>
             <script>
-                new Swiper('.mySwiper', {{
+                var swiper = new Swiper('.mySwiper', {{
                     loop: true,
                     pagination: {{
                         el: '.swiper-pagination',
@@ -307,10 +315,10 @@ def default_page():
                 }});
             </script>
             """
-            
-            # Display carousel
+
+            # Display the carousel in Streamlit
             components.html(carousel_html, height=500)
-        
+
                
                     
 # Main App
