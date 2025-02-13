@@ -224,7 +224,7 @@ def admin_page():
                             else:
                                 if rename_file(file['path'], new_name, file['sha']):
                                     st.success("File renamed!")
-                                    st.experimental_rerun()
+                                    st.rerun()
                                 else:
                                     st.error("Failed to rename file")
 
