@@ -156,23 +156,24 @@ def admin_page():
     with tab2:
         rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
         selected_room = st.selectbox("Select Room", rooms)
-        
+
+        if selected_room:
         # File Upload
-        uploaded_file = st.file_uploader("Upload Media", type=['jpg', 'jpeg', 'png', 'gif', 'mp4'])
-        if uploaded_file:
-            if upload_room_file(selected_room, uploaded_file, uploaded_file.type):
-                st.success("File uploaded successfully!")
-            else:
-                st.error("Failed to upload file")
-        
-        # Info.txt Editor
-        info_content = get_room_info(selected_room)
-        new_content = st.text_area("Edit Room Info", value=info_content, height=200)
-        if st.button("Save Info"):
-            if update_room_info(selected_room, new_content):
-                st.success("Info updated!")
-            else:
-                st.error("Failed to update info")
+            uploaded_file = st.file_uploader("Upload Media", type=['jpg', 'jpeg', 'png', 'gif', 'mp4'])
+            if uploaded_file:
+                if upload_room_file(selected_room, uploaded_file, uploaded_file.type):
+                    st.success("File uploaded successfully!")
+                else:
+                    st.error("Failed to upload file")
+            
+            # Info.txt Editor
+            info_content = get_room_info(selected_room)
+            new_content = st.text_area("Edit Room Info", value=info_content, height=200)
+            if st.button("Save Info"):
+                if update_room_info(selected_room, new_content):
+                    st.success("Info updated!")
+                else:
+                    st.error("Failed to update info")
 
 
     
