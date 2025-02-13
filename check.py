@@ -249,12 +249,12 @@ def default_page():
                 ext = file['name'].split('.')[-1].lower()
                 if ext == "mp4":
                     media_html = f"""
-                        <video controls style="max-height: 400px;">
+                        <video controls style="max-height: 400px; width: 100%;">
                             <source src="{file['download_url']}" type="video/mp4">
                         </video>
                     """
                 else:
-                    media_html = f'<img src="{file["download_url"]}" style="max-height: 400px;" />'
+                    media_html = f'<img src="{file["download_url"]}" style="max-height: 400px; width: 100%; object-fit: contain;" />'
                 carousel_items += f'<div class="swiper-slide">{media_html}</div>'
 
             # Combine CSS, HTML, and JS in one components.html call
@@ -273,14 +273,24 @@ def default_page():
                 }}
                 .swiper-slide img, .swiper-slide video {{
                     max-height: 400px;
+                    width: 100%;
                     border-radius: 10px;
                     box-shadow: 0px 5px 15px rgba(0,0,0,0.2);
+                    object-fit: contain;
                 }}
                 .swiper-pagination-fraction {{
                     font-size: 18px;
                     font-weight: bold;
                     color: white;
                     text-shadow: 0 0 5px rgba(0,0,0,0.5);
+                }}
+                /* Mobile responsiveness adjustments */
+                @media screen and (max-width: 600px) {{
+                    .swiper-slide img, .swiper-slide video {{
+                        max-height: 300px;
+                        width: 100%;
+                        object-fit: contain;
+                    }}
                 }}
             </style>
             <div class="swiper mySwiper">
@@ -309,6 +319,7 @@ def default_page():
 
             # Render the carousel in Streamlit
             components.html(carousel_html, height=500)
+
            
 # Main App
 def main():
