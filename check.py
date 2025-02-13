@@ -179,47 +179,49 @@ def admin_page():
     with tab3:
         rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
         selected_room = st.selectbox("Select Room to Manage", rooms)
-        
-        files = get_github_files(f"{BASE_PATH}/{selected_room}")
-        files = [f for f in files if f['type'] == 'file' and f['name'] != 'info.txt']
-        
-        if not files:
-            st.info("No files to manage in this room")
-            return
-            
-        st.subheader("Manage Files in Selected Room")
-        for file in files:
-            col1, col2, col3, col4 = st.columns([3, 3, 2, 2])
-            with col1:
-                st.markdown(f"**File:** `{file['name']}`")
-                
-            with col2:
-                new_name = st.text_input(
-                    "New name", 
-                    value=file['name'],
-                    key=f"rename_{file['name']}"
-                )
 
-            with col3:
-                if st.button("🗑️ Delete", key=f"del_{file['name']}"):
-                    if delete_file(file['path'], file['sha']):
-                        st.success("File deleted!")
-                        st.rerun()
-                    else:
-                        st.error("Failed to delete file")
-                        
-            with col4:
-                if st.button("✏️ Rename", key=f"ren_{file['name']}"):
-                    if new_name == file['name']:
-                        st.warning("Name unchanged")
-                    elif not new_name:
-                        st.error("Please enter a new name")
-                    else:
-                        if rename_file(file['path'], new_name, file['sha']):
-                            st.success("File renamed!")
+        if selected_room:
+        
+            files = get_github_files(f"{BASE_PATH}/{selected_room}")
+            files = [f for f in files if f['type'] == 'file' and f['name'] != 'info.txt']
+            
+            if not files:
+                st.info("No files to manage in this room")
+                return
+                
+            st.subheader("Manage Files in Selected Room")
+            for file in files:
+                col1, col2, col3, col4 = st.columns([3, 3, 2, 2])
+                with col1:
+                    st.markdown(f"**File:** `{file['name']}`")
+                    
+                with col2:
+                    new_name = st.text_input(
+                        "New name", 
+                        value=file['name'],
+                        key=f"rename_{file['name']}"
+                    )
+    
+                with col3:
+                    if st.button("🗑️ Delete", key=f"del_{file['name']}"):
+                        if delete_file(file['path'], file['sha']):
+                            st.success("File deleted!")
                             st.rerun()
                         else:
-                            st.error("Failed to rename file")
+                            st.error("Failed to delete file")
+                            
+                with col4:
+                    if st.button("✏️ Rename", key=f"ren_{file['name']}"):
+                        if new_name == file['name']:
+                            st.warning("Name unchanged")
+                        elif not new_name:
+                            st.error("Please enter a new name")
+                        else:
+                            if rename_file(file['path'], new_name, file['sha']):
+                                st.success("File renamed!")
+                                st.rerun()
+                            else:
+                                st.error("Failed to rename file")
 
 
 
