@@ -253,11 +253,11 @@ def default_page():
     if filtered_rooms:
         st.write("Select Room")
         selected_room = st.selectbox("Select Room", filtered_rooms)
-        st.subheader(selected_room)
+        st.subheader(f"Room : {selected_room}")
 
         # Display room info from info.txt
         info_content = get_room_info(selected_room)
-        st.markdown(f"**Room Information:**\n{info_content}")
+        st.markdown(f"**Room Information:**\n\n{info_content}")
 
         # Fetch media files for the selected room (ignoring info.txt)
         files = get_github_files(f"{BASE_PATH}/{selected_room}")
