@@ -231,10 +231,7 @@ def admin_page():
 
 
 def default_page():
-    st.markdown(
-        "<h1 style='text-align: center; color: #4B0082; font-family: Arial;'>🔍 Search Room</h1>", 
-        unsafe_allow_html=True
-    )
+    st.header("🔍 Search Room")
 
     # Fetch room names from GitHub (only directories)
     rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
