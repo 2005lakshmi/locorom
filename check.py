@@ -238,7 +238,7 @@ def default_page():
 
     # Fetch room names from GitHub (only directories)
     rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
-    search_term = st.text_input("Enter Room Nunber", "").lower()
+    search_term = st.text_input("**Enter Room Nunber**", "").lower()
     filtered_rooms = [room for room in rooms if search_term in room.lower()]
 
     if not filtered_rooms:
@@ -251,7 +251,7 @@ def default_page():
 
 
     if filtered_rooms:
-        st.write("Select Room")
+        st.write("# ***Select Room***")
         selected_room = st.selectbox("Select Room", filtered_rooms)
         st.subheader(f"Room : {selected_room}")
 
