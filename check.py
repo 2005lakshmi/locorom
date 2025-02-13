@@ -257,14 +257,14 @@ def default_page():
 
         # Display room info from info.txt
         info_content = get_room_info(selected_room)
-        st.markdown(f"**Room Information:**\n\n{info_content}")
+        st.markdown(f"**Room Info/Location:**\n\n{info_content}")
 
         # Fetch media files for the selected room (ignoring info.txt)
         files = get_github_files(f"{BASE_PATH}/{selected_room}")
         media_files = [f for f in files if f['name'] != 'info.txt']
 
         if media_files:
-            st.markdown("### Media Files")
+            st.markdown("###Photos")
 
             # Build carousel items. Wrap images in a zoom container for pinch-to-zoom.
             carousel_items = ""
