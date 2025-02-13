@@ -113,7 +113,7 @@ def rename_file(old_path, new_name, sha):
     ).json()
     
     # Create new file
-    new_path = str(Path(old_path).parent / new_name
+    new_path = str(Path(old_path).parent / new_name)
     data = {
         "message": f"Rename {Path(old_path).name} to {new_name}",
         "content": content['content']
