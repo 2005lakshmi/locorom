@@ -223,7 +223,7 @@ def default_page():
         unsafe_allow_html=True
     )
 
-    # Fetch room names from GitHub
+    # Fetch room names from GitHub (only directories)
     rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
     search_term = st.text_input("Search Rooms", "").lower()
     filtered_rooms = [room for room in rooms if search_term in room.lower()]
@@ -243,7 +243,7 @@ def default_page():
         if media_files:
             st.markdown("### Media Files")
 
-            # Build the carousel items HTML
+            # Build carousel items. Wrap images in a zoom container for pinch-to-zoom.
             carousel_items = ""
             for file in media_files:
                 ext = file['name'].split('.')[-1].lower()
@@ -254,10 +254,15 @@ def default_page():
                         </video>
                     """
                 else:
-                    media_html = f'<img src="{file["download_url"]}" style="max-height: 400px; width: 100%; object-fit: contain;" />'
+                    media_html = (
+                        f'<div class="swiper-zoom-container">'
+                        f'<img src="{file["download_url"]}" '
+                        f'style="max-height: 400px; width: 100%; object-fit: contain;" />'
+                        f'</div>'
+                    )
                 carousel_items += f'<div class="swiper-slide">{media_html}</div>'
 
-            # Combine CSS, HTML, and JS in one components.html call
+            # Combine CSS, HTML, and JS (with zoom and custom navigation) in one block.
             carousel_html = f"""
             <link rel="stylesheet" href="https://unpkg.com/swiper@8.0.7/swiper-bundle.min.css">
             <style>
@@ -284,13 +289,26 @@ def default_page():
                     color: white;
                     text-shadow: 0 0 5px rgba(0,0,0,0.5);
                 }}
-                /* Mobile responsiveness adjustments */
+                /* Responsive adjustments for mobile screens */
                 @media screen and (max-width: 600px) {{
                     .swiper-slide img, .swiper-slide video {{
                         max-height: 300px;
                         width: 100%;
                         object-fit: contain;
                     }}
+                }}
+                /* Custom navigation arrow styling */
+                .swiper-button-next,
+                .swiper-button-prev {{
+                    width: 30px;
+                    height: 30px;
+                    background-color: rgba(0, 0, 0, 0.4);
+                    border-radius: 50%;
+                }}
+                .swiper-button-next:after,
+                .swiper-button-prev:after {{
+                    font-size: 20px;
+                    color: white;
                 }}
             </style>
             <div class="swiper mySwiper">
@@ -305,6 +323,7 @@ def default_page():
             <script>
                 var swiper = new Swiper('.mySwiper', {{
                     loop: true,
+                    zoom: true,  // Enable pinch-to-zoom support
                     pagination: {{
                         el: '.swiper-pagination',
                         type: 'fraction',
@@ -317,7 +336,7 @@ def default_page():
             </script>
             """
 
-            # Render the carousel in Streamlit
+            # Render the carousel
             components.html(carousel_html, height=500)
 
            
