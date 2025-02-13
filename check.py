@@ -217,8 +217,6 @@ def admin_page():
 
 
 
-
-
 def default_page():
     st.markdown(
         "<h1 style='text-align: center; color: #4B0082; font-family: Arial;'>🔍 Search Room</h1>", 
@@ -245,38 +243,7 @@ def default_page():
         if media_files:
             st.markdown("### Media Files")
 
-            # Inject custom CSS for Swiper (carousel) styling
-            components.html(
-                """
-                <link rel="stylesheet" href="https://unpkg.com/swiper@8.0.7/swiper-bundle.min.css">
-                <style>
-                    .swiper {
-                        width: 100%;
-                        height: auto;
-                    }
-                    .swiper-slide {
-                        text-align: center;
-                        display: flex;
-                        justify-content: center;
-                        align-items: center;
-                    }
-                    .swiper-slide img, .swiper-slide video {
-                        max-height: 400px;
-                        border-radius: 10px;
-                        box-shadow: 0px 5px 15px rgba(0,0,0,0.2);
-                    }
-                    .swiper-pagination-fraction {
-                        font-size: 18px;
-                        font-weight: bold;
-                        color: white;
-                        text-shadow: 0 0 5px rgba(0,0,0,0.5);
-                    }
-                </style>
-                """, 
-                height=0
-            )
-
-            # Build the carousel HTML using the media files
+            # Build the carousel items HTML
             carousel_items = ""
             for file in media_files:
                 ext = file['name'].split('.')[-1].lower()
@@ -290,7 +257,32 @@ def default_page():
                     media_html = f'<img src="{file["download_url"]}" style="max-height: 400px;" />'
                 carousel_items += f'<div class="swiper-slide">{media_html}</div>'
 
+            # Combine CSS, HTML, and JS in one components.html call
             carousel_html = f"""
+            <link rel="stylesheet" href="https://unpkg.com/swiper@8.0.7/swiper-bundle.min.css">
+            <style>
+                .swiper {{
+                    width: 100%;
+                    height: auto;
+                }}
+                .swiper-slide {{
+                    text-align: center;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                }}
+                .swiper-slide img, .swiper-slide video {{
+                    max-height: 400px;
+                    border-radius: 10px;
+                    box-shadow: 0px 5px 15px rgba(0,0,0,0.2);
+                }}
+                .swiper-pagination-fraction {{
+                    font-size: 18px;
+                    font-weight: bold;
+                    color: white;
+                    text-shadow: 0 0 5px rgba(0,0,0,0.5);
+                }}
+            </style>
             <div class="swiper mySwiper">
                 <div class="swiper-wrapper">
                     {carousel_items}
@@ -299,7 +291,6 @@ def default_page():
                 <div class="swiper-button-next"></div>
                 <div class="swiper-button-prev"></div>
             </div>
-            
             <script src="https://unpkg.com/swiper@8.0.7/swiper-bundle.min.js"></script>
             <script>
                 var swiper = new Swiper('.mySwiper', {{
@@ -316,11 +307,9 @@ def default_page():
             </script>
             """
 
-            # Display the carousel in Streamlit
+            # Render the carousel in Streamlit
             components.html(carousel_html, height=500)
-
-               
-                    
+           
 # Main App
 def main():
     st.sidebar.title("Navigation")
