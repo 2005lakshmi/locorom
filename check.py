@@ -3,6 +3,7 @@ import base64
 import requests
 import streamlit as st
 from pathlib import Path
+import streamlit.components.v1 as components
 
 # Configuration
 GITHUB_TOKEN = st.secrets["github"]["token"]
@@ -244,93 +245,71 @@ def default_page():
         if media_files:
             st.markdown("### Media Files")
             
-            # Add custom CSS for scrolling animation
+            # Add custom CSS/JS for carousel
             st.markdown("""
+                <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css">
                 <style>
-                @keyframes slide {
-                    0% { transform: translateX(0%); }
-                    100% { transform: translateX(-50%); }
-                }
-                
-                .scroll-container {
-                    width: 100%;
-                    overflow: hidden;
-                    white-space: nowrap;
-                    position: relative;
-                    padding: 15px 0;
-                }
-                
-                .scroller {
-                    display: inline-block;
-                    animation: slide 20s linear infinite;
-                }
-                
-                .scroll-item {
-                    display: inline-block;
-                    margin: 0 15px;
-                    vertical-align: middle;
-                    transition: transform 0.3s ease;
-                }
-                
-                .scroll-item:hover {
-                    transform: scale(1.05);
-                }
-                
-                .scroll-item img, .scroll-item video {
-                    max-height: 200px;
-                    border-radius: 10px;
-                    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-                }
-                
-                /* Mobile touch scrolling */
-                @media (max-width: 768px) {
-                    .scroll-container {
-                        overflow-x: auto;
-                        -webkit-overflow-scrolling: touch;
+                    .swiper-container {
+                        width: 100%;
+                        padding-top: 50px;
+                        padding-bottom: 50px;
                     }
-                    .scroller {
-                        animation: none;
+                    .swiper-slide {
+                        background-position: center;
+                        background-size: contain;
+                        background-repeat: no-repeat;
+                        width: auto !important;
+                        display: flex;
+                        justify-content: center;
                     }
-                }
+                    .swiper-pagination {
+                        bottom: 0 !important;
+                    }
+                    .swiper-button-next, .swiper-button-prev {
+                        color: white !important;
+                    }
                 </style>
             """, unsafe_allow_html=True)
-            
-            # Create scrolling content
-            with st.container():
-                # Duplicate content for seamless looping
-                double_files = media_files * 2
-                
-                scroll_html = """
-                <div class="scroll-container">
-                    <div class="scroller">
-                """
-                
-                for file in double_files:
-                    file_url = file['download_url']
-                    file_ext = file['name'].split('.')[-1].lower()
-                    
-                    if file_ext in ['mp4', 'webm', 'ogg']:
-                        scroll_html += f"""
-                            <div class="scroll-item">
-                                <video controls width="300">
-                                    <source src="{file_url}" type="video/{file_ext}">
-                                </video>
-                            </div>
-                        """
-                    else:
-                        scroll_html += f"""
-                            <div class="scroll-item">
-                                <img src="{file_url}" style="max-width: 300px;">
-                            </div>
-                        """
-                
-                scroll_html += """
-                    </div>
+        
+            # Create carousel HTML
+            carousel_html = f"""
+            <div class="swiper-container">
+                <div class="swiper-wrapper">
+                    {"".join([
+                        f'''<div class="swiper-slide">
+                            {'<video controls style="max-height: 400px;">' if file['name'].split('.')[-1] in ['mp4','webm'] else '<img style="max-height: 400px; border-radius: 10px;">'}
+                                <source src="{file['download_url']}" type="{'video/mp4' if file['name'].endswith('.mp4') else 'image/jpeg'}">
+                            {'</video>' if file['name'].split('.')[-1] in ['mp4','webm'] else '</img>'}
+                            </div>''' 
+                        for file in media_files
+                    ])}
                 </div>
-                """
-                
-                st.markdown(scroll_html, unsafe_allow_html=True)
-
+                <div class="swiper-pagination"></div>
+                <div class="swiper-button-next"></div>
+                <div class="swiper-button-prev"></div>
+            </div>
+            
+            <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+            <script>
+                new Swiper('.swiper-container', {{
+                    loop: true,
+                    pagination: {{
+                        el: '.swiper-pagination',
+                        type: 'fraction',
+                    }},
+                    navigation: {{
+                        nextEl: '.swiper-button-next',
+                        prevEl: '.swiper-button-prev',
+                    }},
+                }});
+            </script>
+            """
+            
+            # Display carousel
+            st.components.html(carousel_html, height=500)
+        
+               
+                    
 # Main App
 def main():
     st.sidebar.title("Navigation")
