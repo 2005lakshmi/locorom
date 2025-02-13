@@ -217,12 +217,16 @@ def admin_page():
                         elif not new_name:
                             st.error("Please enter a new name")
                         else:
-                            if rename_file(file['path'], new_name, file['sha']):
-                                st.success("File renamed!")
-                                st.rerun()
+                            # Check if the new name already exists
+                            current_names = [f['name'] for f in files]
+                            if new_name in current_names:
+                                st.error(f"A file with the name '{new_name}' already exists!")
                             else:
-                                st.error("Failed to rename file")
-
+                                if rename_file(file['path'], new_name, file['sha']):
+                                    st.success("File renamed!")
+                                    st.experimental_rerun()
+                                else:
+                                    st.error("Failed to rename file")
 
 
 def default_page():
