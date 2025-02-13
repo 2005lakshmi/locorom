@@ -140,11 +140,17 @@ def admin_page():
         with st.form("create_room"):
             room_name = st.text_input("Room Name")
             if st.form_submit_button("Create Room"):
-                if create_room_folder(room_name):
-                    st.success("Room created successfully!")
-                    st.experimental_rerun()
+                
+                existing_rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
+            
+                if room_name in existing_rooms:
+                    st.error("Room already exists")
                 else:
-                    st.error("Failed to create room")
+                    if create_room_folder(room_name):
+                        st.success("Room created successfully!")
+                        st.experimental_rerun()
+                    else:
+                        st.error("Failed to create room")
 
 
     with tab2:
