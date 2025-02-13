@@ -219,6 +219,7 @@ def admin_page():
 
 
 # Default Page
+# Update the media display section in default_page function
 def default_page():
     st.markdown("<h1 style='text-align: center; color: #4B0082; font-family: Arial;'>🔍 Search Room</h1>", 
                 unsafe_allow_html=True)
@@ -241,14 +242,59 @@ def default_page():
         
         if media_files:
             st.markdown("### Media Files")
-            cols = st.columns(len(media_files))
-            for idx, col in enumerate(cols):
-                with col:
-                    file_url = media_files[idx]['download_url']
-                    if media_files[idx]['name'].split('.')[-1] in ['mp4']:
-                        st.video(file_url)
+            
+            # Add custom CSS for horizontal scrolling
+            st.markdown("""
+                <style>
+                .scroll-container {
+                    overflow-x: auto;
+                    white-space: nowrap;
+                    padding: 10px 0;
+                }
+                .scroll-item {
+                    display: inline-block;
+                    margin-right: 10px;
+                    vertical-align: top;
+                }
+                .scroll-item img, .scroll-item video {
+                    max-height: 200px;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+                }
+                </style>
+            """, unsafe_allow_html=True)
+            
+            # Create scrolling container
+            with st.container():
+                scroll_html = "<div class='scroll-container'>"
+                for file in media_files:
+                    file_url = file['download_url']
+                    file_ext = file['name'].split('.')[-1].lower()
+                    if file_ext in ['mp4', 'webm', 'ogg']:
+                        scroll_html += f"""
+                            <div class='scroll-item'>
+                                <video controls width='300'>
+                                    <source src='{file_url}' type='video/{file_ext}'>
+                                </video>
+                            </div>
+                        """
                     else:
-                        st.image(file_url, use_column_width=True)
+                        scroll_html += f"""
+                            <div class='scroll-item'>
+                                <img src='{file_url}' style='max-width: 300px;'>
+                            </div>
+                        """
+                scroll_html += "</div>"
+                st.markdown(scroll_html, unsafe_allow_html=True)
+            
+            # Add auto-refresh every 5 seconds for animation effect
+            st.markdown("""
+                <script>
+                setTimeout(function(){
+                    window.location.reload();
+                }, 5000);
+                </script>
+            """, unsafe_allow_html=True)
 
 # Main App
 def main():
