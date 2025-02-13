@@ -163,7 +163,7 @@ def admin_page():
             if upload_room_file(selected_room, uploaded_file, uploaded_file.type):
                 st.success("File uploaded successfully!")
                 import time
-                time.sleep(1000)
+                time.sleep(1)
                 st.rerun()
             else:
                 st.error("Failed to upload file")
