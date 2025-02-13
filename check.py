@@ -135,6 +135,39 @@ def admin_page():
     tab1, tab2, tab3 = st.tabs(["Create Room", "Add Content", "Manage Files"])
     
     # ... [Keep previous tab1 and tab2 content] ...
+    with tab1:
+        with st.form("create_room"):
+            room_name = st.text_input("Room Name")
+            if st.form_submit_button("Create Room"):
+                if create_room_folder(room_name):
+                    st.success("Room created successfully!")
+                    st.experimental_rerun()
+                else:
+                    st.error("Failed to create room")
+
+
+    with tab2:
+        rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
+        selected_room = st.selectbox("Select Room", rooms)
+        
+        # File Upload
+        uploaded_file = st.file_uploader("Upload Media", type=['jpg', 'jpeg', 'png', 'gif', 'mp4'])
+        if uploaded_file:
+            if upload_room_file(selected_room, uploaded_file, uploaded_file.type):
+                st.success("File uploaded successfully!")
+            else:
+                st.error("Failed to upload file")
+        
+        # Info.txt Editor
+        info_content = get_room_info(selected_room)
+        new_content = st.text_area("Edit Room Info", value=info_content, height=200)
+        if st.button("Save Info"):
+            if update_room_info(selected_room, new_content):
+                st.success("Info updated!")
+            else:
+                st.error("Failed to update info")
+
+
     
     with tab3:
         rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
