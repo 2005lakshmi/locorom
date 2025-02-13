@@ -241,45 +241,48 @@ def default_page():
         files = get_github_files(f"{BASE_PATH}/{selected_room}")
         media_files = [f for f in files if f['name'] != 'info.txt']
         
-        
+        # Add this import at the top of your file with other imports
+        import streamlit.components.v1 as components
+
+
         if media_files:
             st.markdown("### Media Files")
             
             # Add custom CSS/JS for carousel
-            st.markdown("""
-                <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css">
+            components.html("""
+                <link rel="stylesheet" href="https://unpkg.com/swiper@8.0.7/swiper-bundle.min.css">
                 <style>
-                    .swiper-container {
+                    .swiper {
                         width: 100%;
-                        padding-top: 50px;
-                        padding-bottom: 50px;
+                        height: 100%;
                     }
                     .swiper-slide {
-                        background-position: center;
-                        background-size: contain;
-                        background-repeat: no-repeat;
-                        width: auto !important;
+                        text-align: center;
                         display: flex;
                         justify-content: center;
+                        align-items: center;
                     }
-                    .swiper-pagination {
-                        bottom: 0 !important;
+                    .swiper-slide img {
+                        max-height: 400px;
+                        border-radius: 10px;
                     }
-                    .swiper-button-next, .swiper-button-prev {
-                        color: white !important;
+                    .swiper-pagination-fraction {
+                        color: white;
+                        font-weight: bold;
+                        text-shadow: 0 0 5px rgba(0,0,0,0.5);
                     }
                 </style>
-            """, unsafe_allow_html=True)
-        
+            """, height=0)
+    
             # Create carousel HTML
             carousel_html = f"""
-            <div class="swiper-container">
+            <div class="swiper mySwiper">
                 <div class="swiper-wrapper">
                     {"".join([
                         f'''<div class="swiper-slide">
-                            {'<video controls style="max-height: 400px;">' if file['name'].split('.')[-1] in ['mp4','webm'] else '<img style="max-height: 400px; border-radius: 10px;">'}
+                            {'<video controls style="max-height: 400px;">' if file['name'].split('.')[-1] in ['mp4'] else '<img style="max-height: 400px;">'}
                                 <source src="{file['download_url']}" type="{'video/mp4' if file['name'].endswith('.mp4') else 'image/jpeg'}">
-                            {'</video>' if file['name'].split('.')[-1] in ['mp4','webm'] else '</img>'}
+                            {'</video>' if file['name'].split('.')[-1] in ['mp4'] else '</img>'}
                             </div>''' 
                         for file in media_files
                     ])}
@@ -288,10 +291,10 @@ def default_page():
                 <div class="swiper-button-next"></div>
                 <div class="swiper-button-prev"></div>
             </div>
-            
-            <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+    
+            <script src="https://unpkg.com/swiper@8.0.7/swiper-bundle.min.js"></script>
             <script>
-                new Swiper('.swiper-container', {{
+                new Swiper('.mySwiper', {{
                     loop: true,
                     pagination: {{
                         el: '.swiper-pagination',
@@ -306,7 +309,7 @@ def default_page():
             """
             
             # Display carousel
-            st.components.html(carousel_html, height=500)
+            components.html(carousel_html, height=500)
         
                
                     
