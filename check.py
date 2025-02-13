@@ -228,6 +228,15 @@ def default_page():
     search_term = st.text_input("Search Rooms", "").lower()
     filtered_rooms = [room for room in rooms if search_term in room.lower()]
 
+    if not filtered_rooms:
+        if search_term == "":
+            st.error("enter room number to find..!")
+        else:
+            st.error(f"No rooms found with the search {search_term}..!")
+        return
+    
+
+
     if filtered_rooms:
         selected_room = st.selectbox("Select a Room", filtered_rooms)
         st.subheader(selected_room)
