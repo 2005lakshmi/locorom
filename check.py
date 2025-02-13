@@ -148,7 +148,7 @@ def admin_page():
                 else:
                     if create_room_folder(room_name):
                         st.success("Room created successfully!")
-                        st.experimental_rerun()
+                        st.rerun()
                     else:
                         st.error("Failed to create room")
 
