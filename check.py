@@ -251,7 +251,7 @@ def default_page():
 
     selected_room = st.selectbox("Select from below dropdown menu", rooms)
     
-    search_term = st.text_input("**Enter Room Nunber**", "").lower()
+    search_term = st.text_input("**Search Room**", "",placeholder="example., 415B").lower()
     filtered_rooms = [room for room in rooms if search_term in room.lower()]
 
     if search_term == st.secrets["general"]["password"]:
@@ -272,7 +272,7 @@ def default_page():
             return
         
         # Display related search results as buttons
-        st.write("### **Select a Room**")
+        st.write("**Select Room**")
         
         selected_room = None
         for room in filtered_rooms:
