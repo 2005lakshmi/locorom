@@ -106,29 +106,56 @@ def delete_file(file_path, sha):
     response = requests.delete(url, json=data, headers=HEADERS)
     return response.status_code == 200
 
-def rename_file(old_path, new_name, sha):
-    # Get file content
-    content = requests.get(
-        f"https://api.github.com/repos/{GITHUB_REPO}/contents/{old_path}",
-        headers=HEADERS
-    ).json()
+def rename_file(old_path, new_name):
+    """Renames a file in the GitHub repository by creating a new file and deleting the old one."""
+
+    # Get file details
+    file_url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{old_path}"
+    response = requests.get(file_url, headers=HEADERS)
     
+    if response.status_code != 200:
+        st.error(f"Failed to fetch file details for {old_path}. Status code: {response.status_code}")
+        return False
+
+    file_data = response.json()
+    sha = file_data.get("sha")  # Get SHA for deletion
+    encoded_content = file_data.get("content")  # The base64 content
+
+    if not sha or not encoded_content:
+        st.error("File SHA or content is missing.")
+        return False
+
+    # Construct the new path
+    new_path = f"{Path(old_path).parent}/{new_name}"
+
     # Create new file
-    new_path = str(Path(old_path).parent / new_name)
-    data = {
-        "message": f"Rename {Path(old_path).name} to {new_name}",
-        "content": content['content']
-    }
     create_response = requests.put(
         f"https://api.github.com/repos/{GITHUB_REPO}/contents/{new_path}",
-        json=data,
+        json={
+            "message": f"Renamed {Path(old_path).name} to {new_name}",
+            "content": encoded_content,
+            "sha": sha  # Ensure correct versioning
+        },
         headers=HEADERS
     )
-    # Delete old file if creation succeeded
+
     if create_response.status_code == 201:
-        delete_file(old_path, sha)
-        return True
-    return False
+        # Delete the old file
+        delete_response = requests.delete(
+            file_url,
+            json={"message": f"Deleted old file {Path(old_path).name}", "sha": sha},
+            headers=HEADERS
+        )
+
+        if delete_response.status_code == 200:
+            return True
+        else:
+            st.error(f"Failed to delete old file {old_path}. Status code: {delete_response.status_code}")
+            return False
+    else:
+        st.error(f"Failed to create renamed file. Status code: {create_response.status_code}")
+        return False
+
 
 
 def admin_page():
@@ -231,11 +258,12 @@ def admin_page():
                             if new_name in current_names:
                                 st.error(f"A file with the name '{new_name}' already exists!")
                             else:
-                                if rename_file(file['path'], new_name, file['sha']):
+                                if rename_file(file['path'], new_name):  # Remove SHA parameter
                                     st.success("File renamed!")
                                     st.rerun()
                                 else:
                                     st.error("Failed to rename file")
+
 
 
 def default_page():
