@@ -191,41 +191,49 @@ def admin_page():
                 return
                 
             st.subheader("Manage Files in Selected Room")
+
             for file in files:
-                col1, col2, col3, col4 = st.columns([3, 3, 2, 2])
+                col1, col2, col3, col4, col5 = st.columns([2, 3, 2, 2, 3])  # Added an extra column for preview
                 with col1:
-                    st.markdown(f"**File:** `{file['name']}`")
-                    
+                    # Display file preview
+                    file_ext = file['name'].split('.')[-1].lower()
+                    if file_ext in ['jpg', 'jpeg', 'png', 'gif']:
+                        st.image(file['download_url'], width=100)
+                    elif file_ext in ['mp4']:
+                        st.video(file['download_url'])
+                    else:
+                        st.markdown(f"📄 `{file['name']}`")  # Display generic file icon for unknown file types
+                
                 with col2:
+                    st.markdown(f"**File:** `{file['name']}`")
+                with col3:
                     new_name = st.text_input(
                         "New name", 
                         value=file['name'],
                         key=f"rename_{file['name']}"
                     )
-    
-                with col3:
+                with col4:
                     if st.button("🗑️ Delete", key=f"del_{file['name']}"):
                         if delete_file(file['path'], file['sha']):
                             st.success("File deleted!")
-                            st.rerun()
+                            st.experimental_rerun()
                         else:
                             st.error("Failed to delete file")
-                            
-                with col4:
+                with col5:
                     if st.button("✏️ Rename", key=f"ren_{file['name']}"):
                         if new_name == file['name']:
                             st.warning("Name unchanged")
                         elif not new_name:
                             st.error("Please enter a new name")
                         else:
-                            # Check if the new name already exists
+                            # Check for duplicate names before renaming
                             current_names = [f['name'] for f in files]
                             if new_name in current_names:
                                 st.error(f"A file with the name '{new_name}' already exists!")
                             else:
                                 if rename_file(file['path'], new_name, file['sha']):
                                     st.success("File renamed!")
-                                    st.rerun()
+                                    st.experimental_rerun()
                                 else:
                                     st.error("Failed to rename file")
 
