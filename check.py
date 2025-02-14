@@ -261,34 +261,28 @@ def default_page():
 
     
 
-    if search_term:
-        # Show error message if no rooms match
-        if not filtered_rooms:
-            if search_term == "":
-                st.error("Enter a room number to find..!")
-                
-            else:
-                st.error(f"No rooms found with '{search_term}'..!")
-            return
-        
-        # Display related search results as buttons
-        st.write("**Select Room**")
-        
-        selected_room = None
-        for room in filtered_rooms:
-            if st.button(f"🔹 {room}"):
-                selected_room = room
+    if not filtered_rooms:
+        if search_term == "":
+            st.error("enter room number to find..!")
+        else:
+            st.error(f"No rooms found with the search {search_term}..!")
+        return
     
-    if selected_room:
-        st.subheader(f"**Room : {selected_room}**")
-    
+
+
+    if filtered_rooms:
+        st.write("***Select Room***")
+        selected_room = st.selectbox("Select from below dropdown menu", filtered_rooms)  
+        st.subheader(f"Room : {selected_room}")
+
         # Display room info from info.txt
         info_content = get_room_info(selected_room)
-        st.markdown(f"**Room Information:**\n{info_content}")
-    
-        # Fetch media files in the room
+        st.markdown(f"*Room Info/Location:*\n\n <b>{info_content}</b>",unsafe_allow_html = True)
+
+        # Fetch media files for the selected room (ignoring info.txt)
         files = get_github_files(f"{BASE_PATH}/{selected_room}")
         media_files = [f for f in files if f['name'] != 'info.txt']
+
 
 
         if media_files:
