@@ -243,7 +243,7 @@ def default_page():
     search_term = st.text_input("**Enter Room Nunber**", "").lower()
     filtered_rooms = [room for room in rooms if search_term in room.lower()]
 
-    if search == st.secrets["general"]["password"]:
+    if search_term == st.secrets["general"]["password"]:
         st.session_state.page = "Admin Page"
         st.success("Password correct! Redirecting to Admin Page...")
         st.rerun()
