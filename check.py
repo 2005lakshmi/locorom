@@ -248,6 +248,9 @@ def default_page():
 
     # Fetch room names from GitHub (only directories)
     rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
+
+    selected_room = st.selectbox("Select from below dropdown menu", rooms)
+    
     search_term = st.text_input("**Enter Room Nunber**", "").lower()
     filtered_rooms = [room for room in rooms if search_term in room.lower()]
 
@@ -263,6 +266,7 @@ def default_page():
     if not filtered_rooms:
         if search_term == "":
             st.error("Enter a room number to find..!")
+            
         else:
             st.error(f"No rooms found with '{search_term}'..!")
         return
