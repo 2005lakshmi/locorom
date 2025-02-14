@@ -399,7 +399,8 @@ def main():
         st.markdown("<hr style = 'border : 1px solid gray;'>", unsafe_allow_html = True)
         st.markdown("<hr style = 'border : 1px solid gray;'>", unsafe_allow_html = True)
         st.write("Made to find Room during Test")
-        st.write("Feedback/Contact: [Email](mailto:mitmfirstyearpaper@gmail.com)")
+        st.write("Feedback/Contact: [Email](mailto:mitmfirstyearpaper@gmail.com) | [WhatsApp](https://wa.me/9964924820)")
+
 
 if __name__ == "__main__":
     main()
