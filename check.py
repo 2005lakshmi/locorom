@@ -261,23 +261,23 @@ def default_page():
 
     
 
-
-    # Show error message if no rooms match
-    if not filtered_rooms:
-        if search_term == "":
-            st.error("Enter a room number to find..!")
-            
-        else:
-            st.error(f"No rooms found with '{search_term}'..!")
-        return
-    
-    # Display related search results as buttons
-    st.write("### **Select a Room**")
-    
-    selected_room = None
-    for room in filtered_rooms:
-        if st.button(f"🔹 {room}"):
-            selected_room = room
+    if search_term:
+        # Show error message if no rooms match
+        if not filtered_rooms:
+            if search_term == "":
+                st.error("Enter a room number to find..!")
+                
+            else:
+                st.error(f"No rooms found with '{search_term}'..!")
+            return
+        
+        # Display related search results as buttons
+        st.write("### **Select a Room**")
+        
+        selected_room = None
+        for room in filtered_rooms:
+            if st.button(f"🔹 {room}"):
+                selected_room = room
     
     if selected_room:
         st.subheader(f"**Room : {selected_room}**")
