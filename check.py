@@ -234,7 +234,7 @@ def default_page():
     #st.header("🔍 Room")
     st.markdown("""
     <h1>
-        <span style="color: red;">Room </span><span style="color: green;font-size: 15px;">[MITM]</span>
+        <span style="color: red;">🔍 Room </span><span style="color: green;font-size: 15px;">[MITM]</span>
     </h1>
     """, unsafe_allow_html=True)
 
