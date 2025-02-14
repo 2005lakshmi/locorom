@@ -398,9 +398,9 @@ def main():
         default_page()
         st.markdown("<hr style = 'border : 1px solid gray;'>", unsafe_allow_html = True)
         st.markdown("<hr style = 'border : 1px solid gray;'>", unsafe_allow_html = True)
-        st.write("IA,SEE papers - first year 2023-24 : [https://lnjmitmfirstyearpapers.streamlit.app/](https://lnjmitmfirstyearpapers.streamlit.app/)")
+        st.write("IA,SEE papers - first year 2023-24: [https://lnjmitmfirstyearpapers.streamlit.app/](https://lnjmitmfirstyearpapers.streamlit.app/)")
         st.write("Made to find Room during Test")
-        st.write("Feedback/Contact: [Email](mailto:mitmfirstyearpaper@gmail.com) | [WhatsApp](https://wa.me/9964924820)")
+        st.write("Feedback/Contact: [Email](mailto:mitmfirstyearpaper@gmail.com) / [WhatsApp](https://wa.me/9964924820)")
 
 
 if __name__ == "__main__":
