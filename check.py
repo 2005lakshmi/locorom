@@ -243,6 +243,12 @@ def default_page():
     search_term = st.text_input("**Enter Room Nunber**", "").lower()
     filtered_rooms = [room for room in rooms if search_term in room.lower()]
 
+    if search == st.secrets["general"]["password"]:
+        st.session_state.page = "Admin Page"
+        st.success("Password correct! Redirecting to Admin Page...")
+        st.rerun()
+
+    
     if not filtered_rooms:
         if search_term == "":
             st.error("enter room number to find..!")
@@ -367,17 +373,19 @@ def default_page():
            
 # Main App
 def main():
-    st.sidebar.title("Navigation")
-    page = st.sidebar.radio("Go to", ["Search Rooms", "Admin Panel"])
-    
-    if page == "Admin Panel":
-        password = st.sidebar.text_input("Password", type="password")
-        if password == st.secrets["general"]["password"]:
-            admin_page()
-        else:
-            st.error("Incorrect Password")
+    if 'page' not in st.session_state:
+        st.session_state.page = "Default Page"  # Set the default page on first load
+
+    page = st.session_state.page
+
+    if page == "Admin Page":
+        admin_page()
     else:
         default_page()
+        st.markdown("<hr style = 'border : 1px solid gray;'>", unsafe_allow_html = True)
+        st.markdown("<hr style = 'border : 1px solid gray;'>", unsafe_allow_html = True)
+        st.write("Made to find Room during Test")
+        st.write("Feedback/Contact: [Email](mailto:mitmfirstyearpaper@gmail.com)")
 
 if __name__ == "__main__":
     main()
