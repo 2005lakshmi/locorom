@@ -5,6 +5,9 @@ import streamlit as st
 from pathlib import Path
 import streamlit.components.v1 as components
 
+
+
+
 # Configuration
 GITHUB_TOKEN = st.secrets["github"]["token"]
 GITHUB_REPO = "2005lakshmi/locorom"
@@ -106,55 +109,78 @@ def delete_file(file_path, sha):
     response = requests.delete(url, json=data, headers=HEADERS)
     return response.status_code == 200
 
-def rename_file(old_path, new_name):
-    """Renames a file in the GitHub repository by creating a new file and deleting the old one."""
 
-    # Get file details
+import requests
+import base64
+from pathlib import Path
+
+def rename_file(old_path, new_name):
+    # GitHub repository details
+    #GITHUB_REPO = "your-username/your-repo"  # Update with your repo
+    #HEADERS = {"Authorization": st.secrets["github"]["token"]}  # Replace with your token
+
+    # Get file content and SHA
     file_url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{old_path}"
     response = requests.get(file_url, headers=HEADERS)
-    
+
     if response.status_code != 200:
-        st.error(f"Failed to fetch file details for {old_path}. Status code: {response.status_code}")
+        st.error("❌ Failed to fetch file content. Rename aborted.")
         return False
 
     file_data = response.json()
-    sha = file_data.get("sha")  # Get SHA for deletion
-    encoded_content = file_data.get("content")  # The base64 content
+    file_sha = file_data.get("sha")
+    file_content = file_data.get("content")  # Base64 encoded
 
-    if not sha or not encoded_content:
-        st.error("File SHA or content is missing.")
+    if not file_sha or not file_content:
+        st.error("⚠️ SHA or file content missing. Rename failed.")
         return False
 
-    # Construct the new path
-    new_path = f"{Path(old_path).parent}/{new_name}"
+    # Decode and re-encode the content properly
+    decoded_content = base64.b64decode(file_content).decode("utf-8")  # Decode content
+    encoded_content = base64.b64encode(decoded_content.encode("utf-8")).decode("utf-8")  # Re-encode
 
-    # Create new file
-    create_response = requests.put(
-        f"https://api.github.com/repos/{GITHUB_REPO}/contents/{new_path}",
-        json={
-            "message": f"Renamed {Path(old_path).name} to {new_name}",
-            "content": encoded_content,
-            "sha": sha  # Ensure correct versioning
-        },
-        headers=HEADERS
-    )
+    # Construct new file path
+    new_path = str(Path(old_path).parent / new_name)
 
-    if create_response.status_code == 201:
-        # Delete the old file
-        delete_response = requests.delete(
-            file_url,
-            json={"message": f"Deleted old file {Path(old_path).name}", "sha": sha},
-            headers=HEADERS
-        )
+    # Check if new file already exists
+    new_file_url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{new_path}"
+    new_file_response = requests.get(new_file_url, headers=HEADERS)
 
-        if delete_response.status_code == 200:
-            return True
-        else:
-            st.error(f"Failed to delete old file {old_path}. Status code: {delete_response.status_code}")
-            return False
+    if new_file_response.status_code == 200:
+        st.error(f"⚠️ A file with the name '{new_name}' already exists!")
+        return False  # Stop to prevent overwriting
+
+    # Create new file with the same content
+    create_url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{new_path}"
+    create_data = {
+        "message": f"Renaming {Path(old_path).name} to {new_name}",
+        "content": encoded_content,  # Re-encoded content
+        "branch": "main"  # Adjust branch if necessary
+    }
+
+    create_response = requests.put(create_url, json=create_data, headers=HEADERS)
+
+    if create_response.status_code != 201:
+        st.error("❌ Failed to create the renamed file. Rename aborted.")
+        return False
+
+    # Delete old file
+    delete_url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{old_path}"
+    delete_data = {
+        "message": f"Deleting old file {Path(old_path).name} after renaming.",
+        "sha": file_sha,  # SHA is required for deleting
+        "branch": "main"  # Adjust if necessary
+    }
+
+    delete_response = requests.delete(delete_url, json=delete_data, headers=HEADERS)
+
+    if delete_response.status_code == 200:
+        st.success("✅ File renamed successfully!")
+        return True
     else:
-        st.error(f"Failed to create renamed file. Status code: {create_response.status_code}")
+        st.error("⚠️ File renaming partially completed. New file created but old file not deleted.")
         return False
+
 
 
 
@@ -247,22 +273,28 @@ def admin_page():
                         else:
                             st.error("Failed to delete file")
                 with col5:
+                    
                     if st.button("✏️ Rename", key=f"ren_{file['name']}"):
+                        new_name = new_name.strip()  # Remove extra spaces from the provided new name
+                
                         if new_name == file['name']:
                             st.warning("Name unchanged")
                         elif not new_name:
                             st.error("Please enter a new name")
                         else:
-                            # Check for duplicate names before renaming
+                            # Check for duplicate names in the same directory
                             current_names = [f['name'] for f in files]
+                
                             if new_name in current_names:
                                 st.error(f"A file with the name '{new_name}' already exists!")
                             else:
-                                if rename_file(file['path'], new_name):  # Remove SHA parameter
+                                # Attempt renaming the file using the rename_file function
+                                if rename_file(file['path'], new_name):  
                                     st.success("File renamed!")
-                                    st.rerun()
+                                    st.rerun()  # Refresh the UI to update the file list
                                 else:
                                     st.error("Failed to rename file")
+
 
 
 
