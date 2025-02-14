@@ -259,7 +259,7 @@ def default_page():
 
         # Display room info from info.txt
         info_content = get_room_info(selected_room)
-        st.markdown(f"*Room Info/Location:*\n\n** {info_content} **")
+        st.markdown(f"*Room Info/Location:*\n\n <b>{info_content}</b>",unsafe_allow_html = True)
 
         # Fetch media files for the selected room (ignoring info.txt)
         files = get_github_files(f"{BASE_PATH}/{selected_room}")
