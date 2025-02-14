@@ -216,7 +216,7 @@ def admin_page():
                     if st.button("🗑️ Delete", key=f"del_{file['name']}"):
                         if delete_file(file['path'], file['sha']):
                             st.success("File deleted!")
-                            st.experimental_rerun()
+                            st.rerun()
                         else:
                             st.error("Failed to delete file")
                 with col5:
