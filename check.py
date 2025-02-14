@@ -231,7 +231,12 @@ def admin_page():
 
 
 def default_page():
-    st.header("🔍 Search Room")
+    st.header("🔍 Room")
+    st.markdown("""
+    <h1>
+        <span style="color: green;font-size: 15px;">[MITM]</span>
+    </h1>
+    """, unsafe_allow_html=True)
 
     # Fetch room names from GitHub (only directories)
     rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
@@ -249,7 +254,7 @@ def default_page():
 
     if filtered_rooms:
         st.write("***Select Room***")
-        selected_room = st.selectbox("Select Room", filtered_rooms)
+        selected_room = st.selectbox("Select from below dropdown menu", filtered_rooms)
         st.subheader(f"Room : {selected_room}")
 
         # Display room info from info.txt
