@@ -400,7 +400,7 @@ def main():
         st.markdown("<hr style = 'border : 1px solid gray;'>", unsafe_allow_html = True)
         st.write("IA,SEE papers - first year 2023-24: [https://lnjmitmfirstyearpapers.streamlit.app/](https://lnjmitmfirstyearpapers.streamlit.app/)")
         st.write("Made to find Room during Test")
-        st.write("Feedback/Contact: [Email](mailto:mitmfirstyearpaper@gmail.com))
+        st.write("Feedback/Contact: [Email](mailto:mitmfirstyearpaper@gmail.com)")
 
 
 if __name__ == "__main__":
