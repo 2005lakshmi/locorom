@@ -272,7 +272,7 @@ def default_page():
 
     if filtered_rooms or selected_room:
         st.write("***Select Room***")
-        selected_room = st.selectbox("Select from below dropdown menu", filtered_rooms)  
+        selected_room = st.radio("Select from below dropdown menu", filtered_rooms)  
         st.subheader(f"Room : {selected_room}")
 
         # Display room info from info.txt
