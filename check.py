@@ -168,13 +168,22 @@ def rename_file(old_path, new_name):
         st.error("File renaming partially completed. New file created but old file not deleted.")
         return False
 
+def delete_room(room_name):
+    """Delete a room and all its contents"""
+    files = get_github_files(f"{BASE_PATH}/{room_name}")
+    success = True
+    for file in files:
+        if file['type'] == 'file':
+            if not delete_file(file['path'], file['sha']):
+                success = False
+    return success
 
 
 def admin_page():
     st.title("Admin Panel")
-    tab1, tab2, tab3 = st.tabs(["Create Room", "Add Content", "Manage Files"])
+    tab1, tab2, tab3, tab4 = st.tabs(["Create Room", "Add Content", "Manage Files", "Delete Rooms"])
     
-    # ... [Keep previous tab1 and tab2 content] ...
+    
     with tab1:
         with st.form("create_room"):
             room_name = st.text_input("Room Name")
@@ -281,7 +290,60 @@ def admin_page():
                                 else:
                                     st.error("Failed to rename file")
 
+    with tab4:
+        st.header("🗑️ Delete Rooms")
+        search_term = st.text_input("Search rooms by name", key="room_search").lower()
+        
+        # Get all rooms
+        all_rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
+        filtered_rooms = [room for room in all_rooms if search_term in room.lower()]
+        
+        if not filtered_rooms:
+            st.info("No rooms found matching your search")
+            return
 
+        for room in filtered_rooms:
+            with st.expander(f"Room: {room}", expanded=False):
+                # Show room info
+                info_content = get_room_info(room)
+                st.markdown(f"**Description:**\n{info_content}")
+                
+                # Show media previews
+                files = get_github_files(f"{BASE_PATH}/{room}")
+                media_files = [f for f in files if f['name'] != 'info.txt']
+                
+                if media_files:
+                    st.markdown("**Media Preview**")
+                    cols = st.columns(4)
+                    for idx, file in enumerate(media_files):
+                        col = cols[idx % 4]
+                        with col:
+                            file_ext = file['name'].split('.')[-1].lower()
+                            if file_ext in ['jpg', 'jpeg', 'png', 'gif']:
+                                st.image(file['download_url'], use_column_width=True)
+                            elif file_ext == 'mp4':
+                                st.video(file['download_url'])
+                            else:
+                                st.write(f"📄 {file['name']}")
+                
+                # Delete button with confirmation
+                if st.button(f"Permanently Delete {room}", key=f"del_room_{room}"):
+                    st.session_state['confirm_delete'] = room
+                
+                if st.session_state.get('confirm_delete') == room:
+                    st.error(f"**WARNING:** This will permanently delete {room} and all its contents!")
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if st.button(f"Confirm Delete {room}", type="primary", key=f"conf_del_{room}"):
+                            if delete_room(room):
+                                st.success(f"Successfully deleted {room}!")
+                                del st.session_state['confirm_delete']
+                                st.rerun()
+                            else:
+                                st.error("Failed to delete some files. Check repository.")
+                    with col2:
+                        if st.button("Cancel", key=f"cancel_del_{room}"):
+                            del st.session_state['confirm_delete']
 
 
 def default_page():
