@@ -350,71 +350,73 @@ def admin_page():
                 
                 
     with tab3:
-        rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
-        selected_room = st.selectbox("Select Room to Manage", rooms)
-
-        if selected_room:
+        st.header("🗂 Manage Files")
+        search_term = st.text_input("Search rooms by name", key="manage_search").lower()
         
-            files = get_github_files(f"{BASE_PATH}/{selected_room}")
-            files = [f for f in files if f['type'] == 'file' and f['name'] != 'info.txt']
-            
-            if not files:
-                st.info("No files to manage in this room")
-                return
+        # Get all rooms
+        all_rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
+        filtered_rooms = [room for room in all_rooms if search_term in room.lower()]
+        
+        if not filtered_rooms:
+            st.info("No rooms found matching your search")
+            return
+        
+        for room in filtered_rooms:
+            with st.expander(f"Room: **{room}**", expanded=False):
+                files = get_github_files(f"{BASE_PATH}/{room}")
+                files = [f for f in files if f['type'] == 'file' and f['name'] != 'info.txt']
                 
-            st.subheader("Manage Files in Selected Room")
-
-            for file in files:
-                col1, col2, col3, col4, col5 = st.columns([2, 3, 2, 2, 3])  # Added an extra column for preview
-                with col1:
-                    # Display file preview
-                    file_ext = file['name'].split('.')[-1].lower()
-                    if file_ext in ['jpg', 'jpeg', 'png', 'gif']:
-                        st.image(file['download_url'], width=100)
-                    elif file_ext in ['mp4']:
-                        st.video(file['download_url'])
-                    else:
-                        st.markdown(f"📄 `{file['name']}`")  # Display generic file icon for unknown file types
-                
-                with col2:
-                    st.markdown(f"**File:** `{file['name']}`")
-                with col3:
-                    new_name = st.text_input(
-                        "New name", 
-                        value=file['name'],
-                        key=f"rename_{file['name']}"
-                    )
-                with col4:
-                    if st.button("🗑️ Delete", key=f"del_{file['name']}"):
-                        if delete_file(file['path'], file['sha']):
-                            st.success("File deleted!")
-                            st.rerun()
-                        else:
-                            st.error("Failed to delete file")
-                with col5:
+                if not files:
+                    st.info("No files to manage in this room")
+                    continue
                     
-                    if st.button("✏️ Rename", key=f"ren_{file['name']}"):
-                        new_name = new_name.strip()  # Remove extra spaces from the provided new name
+                st.subheader(f"Files in {room}")
                 
-                        if new_name == file['name']:
-                            st.warning("Name unchanged")
-                        elif not new_name:
-                            st.error("Please enter a new name")
+                for file in files:
+                    col1, col2, col3, col4 = st.columns([2, 3, 2, 2])
+                    with col1:
+                        # File preview
+                        file_ext = file['name'].split('.')[-1].lower()
+                        if file_ext in ['jpg', 'jpeg', 'png', 'gif']:
+                            st.image(file['download_url'], width=100)
+                        elif file_ext in ['mp4']:
+                            st.video(file['download_url'])
                         else:
-                            # Check for duplicate names in the same directory
-                            current_names = [f['name'] for f in files]
-                
-                            if new_name in current_names:
-                                st.error(f"A file with the name '{new_name}' already exists!")
+                            st.markdown(f"📄 `{file['name']}`")
+                    
+                    with col2:
+                        st.markdown(f"**File:** `{file['name']}`")
+                    
+                    with col3:
+                        # Rename functionality
+                        new_name = st.text_input(
+                            "New name",
+                            value=file['name'],
+                            key=f"rename_{room}_{file['name']}"
+                        )
+                    
+                    with col4:
+                        # Delete button
+                        if st.button("🗑️ Delete", key=f"del_{room}_{file['name']}"):
+                            if delete_file(file['path'], file['sha']):
+                                st.success("File deleted!")
+                                st.rerun()
                             else:
-                                # Attempt renaming the file using the rename_file function
-                                if rename_file(file['path'], new_name):  
+                                st.error("Failed to delete file")
+                    
+                        # Rename button
+                        if st.button("✏️ Rename", key=f"ren_{room}_{file['name']}"):
+                            if new_name.strip() == file['name']:
+                                st.warning("Name unchanged")
+                            elif not new_name.strip():
+                                st.error("Please enter a new name")
+                            else:
+                                if rename_file(file['path'], new_name.strip()):
                                     st.success("File renamed!")
-                                    st.rerun()  # Refresh the UI to update the file list
+                                    st.rerun()
                                 else:
                                     st.error("Failed to rename file")
-
-    
+        
     with tab4:
         st.header("🗑️ Delete Rooms")
         search_term = st.text_input("Search rooms by name", key="room_search").lower()
