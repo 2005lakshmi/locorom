@@ -195,7 +195,7 @@ def admin_page():
                     st.error("Room already exists")
                 else:
                     if create_room_folder(room_name):
-                        st.success("Room created successfully!")
+                        st.success(f"Room **{room_name}** created successfully!")
                         import time
                         time.sleep(1)
                         st.rerun()
