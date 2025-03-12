@@ -183,23 +183,130 @@ def admin_page():
     st.title("Admin Panel")
     tab1, tab2, tab3, tab4 = st.tabs(["Create Room", "Add Content", "Manage Files", "Delete Rooms"])
     
-    
+        
     with tab1:
+        st.header("Create New Room")
+        
+        # Search existing rooms section
+        st.subheader("Search Existing Rooms")
+        search_term = st.text_input("Check existing rooms:", key="create_search").strip().lower()
+        
+        existing_rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
+        filtered_rooms = [room for room in existing_rooms if search_term in room.lower()]
+        
+        if filtered_rooms:
+            st.markdown("### Matching Rooms Preview")
+            for room in filtered_rooms:
+                with st.expander(f"Room: {room}", expanded=False):
+                    # Display room content preview
+                    files = get_github_files(f"{BASE_PATH}/{room}")
+                    media_files = [f for f in files if f['name'] != 'info.txt']
+                    
+                    if media_files:
+                        carousel_items = ""
+                        for file in media_files:
+                            ext = file['name'].split('.')[-1].lower()
+                            if ext == "mp4":
+                                media_html = f"""
+                                    <video controls style="max-height: 400px; width: 100%;">
+                                        <source src="{file['download_url']}" type="video/mp4">
+                                    </video>
+                                """
+                            else:
+                                media_html = (
+                                    f'<div class="swiper-zoom-container">'
+                                    f'<img src="{file["download_url"]}" '
+                                    f'style="max-height: 400px; width: 100%; object-fit: contain;" />'
+                                    f'</div>'
+                                )
+                            carousel_items += f'<div class="swiper-slide">{media_html}</div>'
+    
+                        carousel_html = f"""
+                        <link rel="stylesheet" href="https://unpkg.com/swiper@8.0.7/swiper-bundle.min.css">
+                        <style>
+                            .swiper {{
+                                width: 100%;
+                                height: auto;
+                            }}
+                            .swiper-slide {{
+                                text-align: center;
+                                display: flex;
+                                justify-content: center;
+                                align-items: center;
+                            }}
+                            .swiper-slide img, .swiper-slide video {{
+                                max-height: 400px;
+                                width: 100%;
+                                border-radius: 10px;
+                                box-shadow: 0px 5px 15px rgba(0,0,0,0.2);
+                                object-fit: contain;
+                            }}
+                            .swiper-pagination-fraction {{
+                                font-size: 18px;
+                                font-weight: bold;
+                                color: white;
+                                text-shadow: 0 0 5px rgba(0,0,0,0.5);
+                            }}
+                            .swiper-button-next,
+                            .swiper-button-prev {{
+                                width: 30px;
+                                height: 30px;
+                                background-color: rgba(0, 0, 0, 0.4);
+                                border-radius: 50%;
+                            }}
+                            .swiper-button-next:after,
+                            .swiper-button-prev:after {{
+                                font-size: 20px;
+                                color: white;
+                            }}
+                        </style>
+                        <div class="swiper mySwiper">
+                            <div class="swiper-wrapper">
+                                {carousel_items}
+                            </div>
+                            <div class="swiper-pagination"></div>
+                            <div class="swiper-button-next"></div>
+                            <div class="swiper-button-prev"></div>
+                        </div>
+                        <script src="https://unpkg.com/swiper@8.0.7/swiper-bundle.min.js"></script>
+                        <script>
+                            var swiper = new Swiper('.mySwiper', {{
+                                loop: true,
+                                zoom: true,
+                                pagination: {{
+                                    el: '.swiper-pagination',
+                                    type: 'fraction',
+                                }},
+                                navigation: {{
+                                    nextEl: '.swiper-button-next',
+                                    prevEl: '.swiper-button-prev',
+                                }},
+                            }});
+                        </script>
+                        """
+                        components.html(carousel_html, height=500)
+                    else:
+                        st.info("No media files in this room")
+            st.markdown("---")
+    
+        # Room creation form
         with st.form("create_room"):
-            room_name = st.text_input("Room Name")
-            if st.form_submit_button("Create Room"):
-                
-                existing_rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
+            st.subheader("Create New Room")
+            room_name = st.text_input("Enter new room name:")
             
-                if room_name in existing_rooms:
-                    st.error("Room already exists")
+            if st.form_submit_button("Create Room"):
+                existing_rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
+                
+                if not room_name:
+                    st.error("Please enter a room name")
+                elif room_name in existing_rooms:
+                    st.error(f"Room '{room_name}' already exists!")
                 else:
                     if create_room_folder(room_name):
-                        st.success("Room created successfully!")
+                        st.success(f"Room '{room_name}' created successfully!")
                         st.rerun()
                     else:
-                        st.error("Failed to create room")
-
+                        st.error("Failed to create room - check permissions or try again")
 
         
     with tab2:
