@@ -205,6 +205,9 @@ def admin_page():
     with tab2:
         st.header("📤 Add/Edit Room Content")
         search_term = st.text_input("Search rooms by name", key="content_search").lower()
+
+        if 'upload_counter' not in st.session_state:
+            st.session_state.upload_counter = 0
         
         # Get all rooms and filter
         all_rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
@@ -326,19 +329,24 @@ def admin_page():
                         else:
                             st.error("Update failed")
     
-                    # File uploader
+                    # File uploader with state management
                     st.markdown("### Upload Media")
                     uploaded_file = st.file_uploader(
                         "Choose file",
                         type=['jpg', 'jpeg', 'png', 'gif', 'mp4'],
-                        key=f"upload_{room}"
+                        key=f"upload_{room}_{st.session_state.upload_counter}"
                     )
+                    
                     if uploaded_file:
                         if upload_room_file(room, uploaded_file, uploaded_file.type):
                             st.success("Upload successful!")
+                            # Increment counter to reset uploader
+                            st.session_state.upload_counter += 1
                             st.rerun()
                         else:
                             st.error("Upload failed")
+                
+                
     with tab3:
         rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
         selected_room = st.selectbox("Select Room to Manage", rooms)
