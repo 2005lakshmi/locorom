@@ -3,6 +3,7 @@ import base64
 import requests
 import streamlit as st
 from pathlib import Path
+import time
 import streamlit.components.v1 as components
 
 
@@ -195,6 +196,7 @@ def admin_page():
                 else:
                     if create_room_folder(room_name):
                         st.success("Room created successfully!")
+                        time.sleep(1)
                         st.rerun()
                     else:
                         st.error("Failed to create room")
