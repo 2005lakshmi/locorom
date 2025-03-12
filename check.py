@@ -183,9 +183,8 @@ def admin_page():
     st.title("Admin Panel")
     tab1, tab2, tab3, tab4 = st.tabs(["Create Room", "Add Content", "Manage Files", "Delete Rooms"])
     
-            
+                
     with tab1:
-        # Room creation form
         with st.form("create_room"):
             room_name = st.text_input("Room Name")
             if st.form_submit_button("Create Room"):
@@ -200,10 +199,11 @@ def admin_page():
                     else:
                         st.error("Failed to create room")
     
-        # Simple room search section
+        # Modified search section with unique key
         st.markdown("---")
         st.subheader("Search Existing Rooms")
-        search_term = st.text_input("Enter room number to search:", key="room_search").strip()
+        search_term = st.text_input("Enter room number to search:", 
+                                  key="tab1_room_search").strip()  # Unique key
         
         if search_term:
             existing_rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
