@@ -290,41 +290,118 @@ def admin_page():
                                 else:
                                     st.error("Failed to rename file")
 
+    
     with tab4:
         st.header("🗑️ Delete Rooms")
         search_term = st.text_input("Search rooms by name", key="room_search").lower()
         
-        # Get all rooms
         all_rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
         filtered_rooms = [room for room in all_rooms if search_term in room.lower()]
         
         if not filtered_rooms:
             st.info("No rooms found matching your search")
             return
-
+    
         for room in filtered_rooms:
             with st.expander(f"Room: {room}", expanded=False):
-                # Show room info
+                # Room info with empty state
                 info_content = get_room_info(room)
-                st.markdown(f"**Description:**\n{info_content}")
+                if info_content.strip():
+                    st.markdown(f"**Description:**\n\n{info_content}")
+                else:
+                    st.warning("No description available for this room")
                 
-                # Show media previews
+                # Media files handling
                 files = get_github_files(f"{BASE_PATH}/{room}")
                 media_files = [f for f in files if f['name'] != 'info.txt']
                 
                 if media_files:
-                    st.markdown("**Media Preview**")
-                    cols = st.columns(4)
-                    for idx, file in enumerate(media_files):
-                        col = cols[idx % 4]
-                        with col:
-                            file_ext = file['name'].split('.')[-1].lower()
-                            if file_ext in ['jpg', 'jpeg', 'png', 'gif']:
-                                st.image(file['download_url'], use_column_width=True)
-                            elif file_ext == 'mp4':
-                                st.video(file['download_url'])
-                            else:
-                                st.write(f"📄 {file['name']}")
+                    st.markdown("### Media Preview")
+                    # Build carousel similar to default page
+                    carousel_items = ""
+                    for file in media_files:
+                        ext = file['name'].split('.')[-1].lower()
+                        if ext == "mp4":
+                            media_html = f"""
+                                <video controls style="max-height: 400px; width: 100%;">
+                                    <source src="{file['download_url']}" type="video/mp4">
+                                </video>
+                            """
+                        else:
+                            media_html = (
+                                f'<div class="swiper-zoom-container">'
+                                f'<img src="{file["download_url"]}" '
+                                f'style="max-height: 400px; width: 100%; object-fit: contain;" />'
+                                f'</div>'
+                            )
+                        carousel_items += f'<div class="swiper-slide">{media_html}</div>'
+    
+                    carousel_html = f"""
+                    <link rel="stylesheet" href="https://unpkg.com/swiper@8.0.7/swiper-bundle.min.css">
+                    <style>
+                        .swiper {{
+                            width: 100%;
+                            height: auto;
+                        }}
+                        .swiper-slide {{
+                            text-align: center;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                        }}
+                        .swiper-slide img, .swiper-slide video {{
+                            max-height: 400px;
+                            width: 100%;
+                            border-radius: 10px;
+                            box-shadow: 0px 5px 15px rgba(0,0,0,0.2);
+                            object-fit: contain;
+                        }}
+                        .swiper-pagination-fraction {{
+                            font-size: 18px;
+                            font-weight: bold;
+                            color: white;
+                            text-shadow: 0 0 5px rgba(0,0,0,0.5);
+                        }}
+                        .swiper-button-next,
+                        .swiper-button-prev {{
+                            width: 30px;
+                            height: 30px;
+                            background-color: rgba(0, 0, 0, 0.4);
+                            border-radius: 50%;
+                        }}
+                        .swiper-button-next:after,
+                        .swiper-button-prev:after {{
+                            font-size: 20px;
+                            color: white;
+                        }}
+                    </style>
+                    <div class="swiper mySwiper">
+                        <div class="swiper-wrapper">
+                            {carousel_items}
+                        </div>
+                        <div class="swiper-pagination"></div>
+                        <div class="swiper-button-next"></div>
+                        <div class="swiper-button-prev"></div>
+                    </div>
+                    <script src="https://unpkg.com/swiper@8.0.7/swiper-bundle.min.js"></script>
+                    <script>
+                        var swiper = new Swiper('.mySwiper', {{
+                            loop: true,
+                            zoom: true,
+                            pagination: {{
+                                el: '.swiper-pagination',
+                                type: 'fraction',
+                            }},
+                            navigation: {{
+                                nextEl: '.swiper-button-next',
+                                prevEl: '.swiper-button-prev',
+                            }},
+                        }});
+                    </script>
+                    """
+                    components.html(carousel_html, height=500)
+                else:
+                    st.info("No photos or videos available in this room")
                 
                 # Delete button with confirmation
                 if st.button(f"Permanently Delete {room}", key=f"del_room_{room}"):
@@ -344,7 +421,6 @@ def admin_page():
                     with col2:
                         if st.button("Cancel", key=f"cancel_del_{room}"):
                             del st.session_state['confirm_delete']
-
 
 def default_page():
     #st.header("🔍 Room")
