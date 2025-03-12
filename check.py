@@ -342,6 +342,8 @@ def admin_page():
                             st.success("Upload successful!")
                             # Increment counter to reset uploader
                             st.session_state.upload_counter += 1
+                            import time
+                            time.sleep(1)
                             st.rerun()
                         else:
                             st.error("Upload failed")
