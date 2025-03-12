@@ -348,7 +348,7 @@ def admin_page():
                         else:
                             st.error("Upload failed")
                 
-                
+                    
     with tab3:
         st.header("🗂 Manage Files")
         search_term = st.text_input("Search rooms by name", key="manage_search").lower()
@@ -360,62 +360,65 @@ def admin_page():
         if not filtered_rooms:
             st.info("No rooms found matching your search")
             return
-        
+    
         for room in filtered_rooms:
             with st.expander(f"Room: **{room}**", expanded=False):
+                # Display carousel like default page
+                files = get_github_files(f"{BASE_PATH}/{room}")
+                media_files = [f for f in files if f['name'] != 'info.txt']
+                
+                if media_files:
+                    st.markdown("### Current Files")
+                    carousel_items = ""
+                    for file in media_files:
+                        ext = file['name'].split('.')[-1].lower()
+                        if ext == "mp4":
+                            media_html = f"""
+                                <video controls style="max-height: 400px; width: 100%;">
+                                    <source src="{file['download_url']}" type="video/mp4">
+                                </video>
+                            """
+                        else:
+                            media_html = (
+                                f'<div class="swiper-zoom-container">'
+                                f'<img src="{file["download_url"]}" '
+                                f'style="max-height: 400px; width: 100%; object-fit: contain;" />'
+                                f'</div>'
+                            )
+                        carousel_items += f'<div class="swiper-slide">{media_html}</div>'
+    
+                    carousel_html = f"""
+                    <!-- Same carousel HTML/JS/CSS as default page -->
+                    {carousel_html_implementation}  
+                    """
+                    components.html(carousel_html, height=500)
+                else:
+                    st.info("No files remaining in this room")
+    
+                # File management controls
+                st.markdown("### File Operations")
                 files = get_github_files(f"{BASE_PATH}/{room}")
                 files = [f for f in files if f['type'] == 'file' and f['name'] != 'info.txt']
                 
-                if not files:
-                    st.info("No files to manage in this room")
-                    continue
-                    
-                st.subheader(f"Files in {room}")
-                
                 for file in files:
-                    col1, col2, col3, col4 = st.columns([2, 3, 2, 2])
+                    col1, col2, col3 = st.columns([2, 4, 2])
                     with col1:
-                        # File preview
-                        file_ext = file['name'].split('.')[-1].lower()
-                        if file_ext in ['jpg', 'jpeg', 'png', 'gif']:
-                            st.image(file['download_url'], width=100)
-                        elif file_ext in ['mp4']:
-                            st.video(file['download_url'])
-                        else:
-                            st.markdown(f"📄 `{file['name']}`")
-                    
+                        st.markdown(f"`{file['name']}`")
                     with col2:
-                        st.markdown(f"**File:** `{file['name']}`")
-                    
-                    with col3:
-                        # Rename functionality
                         new_name = st.text_input(
                             "New name",
                             value=file['name'],
-                            key=f"rename_{room}_{file['name']}"
+                            key=f"rename_{file['name']}"
                         )
-                    
-                    with col4:
-                        # Delete button
-                        if st.button("🗑️ Delete", key=f"del_{room}_{file['name']}"):
+                    with col3:
+                        if st.button("🗑️ Delete", key=f"del_{file['name']}"):
                             if delete_file(file['path'], file['sha']):
-                                st.success("File deleted!")
+                                st.success("Deleted!")
                                 st.rerun()
-                            else:
-                                st.error("Failed to delete file")
-                    
-                        # Rename button
-                        if st.button("✏️ Rename", key=f"ren_{room}_{file['name']}"):
-                            if new_name.strip() == file['name']:
-                                st.warning("Name unchanged")
-                            elif not new_name.strip():
-                                st.error("Please enter a new name")
-                            else:
-                                if rename_file(file['path'], new_name.strip()):
-                                    st.success("File renamed!")
-                                    st.rerun()
-                                else:
-                                    st.error("Failed to rename file")
+                        if st.button("✏️ Rename", key=f"ren_{file['name']}"):
+                            if rename_file(file['path'], new_name):
+                                st.success("Renamed!")
+                                st.rerun()
         
     with tab4:
         st.header("🗑️ Delete Rooms")
