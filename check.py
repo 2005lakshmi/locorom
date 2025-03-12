@@ -303,8 +303,9 @@ def admin_page():
             return
     
         for room in filtered_rooms:
-            with st.expander(f'<b>Room:</b> <strong style="font-size:18px;">{room}</strong>', expanded=False):
+            with st.expander(f"Room: {room}", expanded=False):
                 # Room info with empty state
+                st.markdown(f"**Room:** <span style='font-weight:900; font-size:18px;'>{room}</span>", unsafe_allow_html=True)
                 info_content = get_room_info(room)
                 if info_content.strip():
                     st.markdown(f"**Description:**\n\n{info_content}")
