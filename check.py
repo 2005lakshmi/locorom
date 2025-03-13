@@ -653,10 +653,10 @@ def admin_page():
                                     st.rerun()
                             else:
                                 st.error("Failed to delete some files. Check repository.")
-                    with col2:
-                        if st.button("Cancel", key=f"cancel_del_{room}"):
-                            #del st.session_state['confirm_delete']
-                            st.rerun()
+                        with col2:
+                            if st.button("Cancel", key=f"cancel_del_{room}"):
+                                #del st.session_state['confirm_delete']
+                                st.rerun()
                             
 def default_page():
     #st.header("🔍 Room")
