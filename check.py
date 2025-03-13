@@ -639,23 +639,25 @@ def admin_page():
                 
                 # Delete button with confirmation
                 if st.button(f"Permanently Delete {room}", key=f"del_room_{room}"):
-                    st.session_state['confirm_delete'] = room
+                    #st.session_state['confirm_delete'] = room
                 
-                if st.session_state.get('confirm_delete') == room:
-                    st.error(f"**WARNING:** This will permanently delete {room} and all its contents!")
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        if st.button(f"Confirm Delete {room}", type="primary", key=f"conf_del_{room}"):
-                            if delete_room(room):
-                                st.success(f"Successfully deleted {room}!")
-                                del st.session_state['confirm_delete']
-                                st.rerun()
+                #if st.session_state.get('confirm_delete') == room:
+                        st.error(f"**WARNING:** This will permanently delete {room} and all its contents!")
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            if st.button(f"Confirm Delete {room}", type="primary", key=f"conf_del_{room}"):
+                                if delete_room(room):
+                                    st.success(f"Successfully deleted {room}!")
+                                    time.sleep(1)
+                                    #del st.session_state['confirm_delete']
+                                    st.rerun()
                             else:
                                 st.error("Failed to delete some files. Check repository.")
                     with col2:
                         if st.button("Cancel", key=f"cancel_del_{room}"):
-                            del st.session_state['confirm_delete']
-
+                            #del st.session_state['confirm_delete']
+                            st.rerun()
+                            
 def default_page():
     #st.header("🔍 Room")
     st.markdown("""
