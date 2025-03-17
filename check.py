@@ -651,7 +651,7 @@ def admin_page():
                         #del st.session_state['confirm_delete']
                         import time
                         time.sleep(1)
-                        st.rerun()
+                        #st.rerun()
                     else:
                         st.error("Failed to delete some files. Check repository.")
                     '''with col2:
