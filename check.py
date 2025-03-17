@@ -649,8 +649,8 @@ def admin_page():
                     if delete_room(room):
                         st.success(f"Successfully deleted {room}!")
                         #del st.session_state['confirm_delete']
-                        import time
-                        time.sleep(1)
+                        #import time
+                        #time.sleep(1)
                         #st.rerun()
                     else:
                         st.error("Failed to delete some files. Check repository.")
