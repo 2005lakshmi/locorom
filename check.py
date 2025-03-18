@@ -205,48 +205,8 @@ def delete_room(room_name):
                 success = False
     return success
 
-from functools import wraps
-import time
-import requests
 
-def retry(times=3, delay=2, retryable_status_codes={403, 500, 502, 503, 504}):
-    """Enhanced retry decorator with status code handling"""
-    def decorator(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            attempts = 0
-            while attempts <= times:
-                try:
-                    response = func(*args, **kwargs)
-                    if response.status_code in retryable_status_codes:
-                        raise requests.exceptions.RetryError(
-                            f"Retryable status code: {response.status_code}"
-                        )
-                    return response
-                except (requests.exceptions.Timeout, 
-                        requests.exceptions.ConnectionError,
-                        requests.exceptions.RetryError) as e:
-                    if attempts < times:
-                        sleep_time = delay * (attempts + 1)  # Exponential backoff
-                        if response and response.headers.get('X-RateLimit-Remaining') == '0':
-                            reset_time = int(response.headers.get('X-RateLimit-Reset', time.time() + 60))
-                            sleep_time = max(reset_time - time.time(), 60)
-                        time.sleep(sleep_time)
-                        attempts += 1
-                        continue
-                    raise
-                except Exception as e:
-                    raise
-            return func(*args, **kwargs)
-        return wrapper
-    return decorator
 
-@retry(times=3, delay=5)
-def github_api_call(method, url, **kwargs):
-    """Wrapper for GitHub API calls"""
-    response = requests.request(method, url, headers=HEADERS, **kwargs)
-    response.raise_for_status()
-    return response
 
 def rename_room(old_name, new_name):
     try:
@@ -301,7 +261,7 @@ def rename_room(old_name, new_name):
 
 def admin_page():
     st.title("Admin Panel")
-    tab1, tab2, tab3, tab4, tab5= st.tabs(["Create Room", "Add Content", "Manage Files", "Delete Rooms","Rename room"])
+    tab1, tab2, tab3, tab4= st.tabs(["Create Room", "Add Content", "Manage Files", "Delete Rooms"])
     
                 
     with tab1:
@@ -643,142 +603,9 @@ def admin_page():
                 else:
                     st.info("No media files available in this room")
         
+
+
     with tab4:
-        st.header("🗑️ Delete Rooms")
-        search_term = st.text_input("Search rooms by name", key="room_search").lower()
-        
-        all_rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
-        filtered_rooms = [room for room in all_rooms if search_term in room.lower()]
-        
-        if not filtered_rooms:
-            st.info("No rooms found matching your search")
-            return
-    
-        for room in filtered_rooms:
-            with st.expander(f"Room: **{room}**", expanded=False):
-                # Room info with empty state
-                st.markdown(f"<span style='font-weight:900; font-size:18px;'>{room}</span>", unsafe_allow_html=True)
-                info_content = get_room_info(room)
-                if info_content.strip():
-                    st.markdown(f"**Description:**\n\n{info_content}")
-                else:
-                    st.warning("No description available for this room")
-                
-                # Media files handling
-                files = get_github_files(f"{BASE_PATH}/{room}")
-                media_files = [f for f in files if f['name'] != 'info.txt']
-                
-                if media_files:
-                    st.markdown("### Media Preview")
-                    # Build carousel similar to default page
-                    carousel_items = ""
-                    for file in media_files:
-                        ext = file['name'].split('.')[-1].lower()
-                        if ext == "mp4":
-                            media_html = f"""
-                                <video controls style="max-height: 400px; width: 100%;">
-                                    <source src="{file['download_url']}" type="video/mp4">
-                                </video>
-                            """
-                        else:
-                            media_html = (
-                                f'<div class="swiper-zoom-container">'
-                                f'<img src="{file["download_url"]}" '
-                                f'style="max-height: 400px; width: 100%; object-fit: contain;" />'
-                                f'</div>'
-                            )
-                        carousel_items += f'<div class="swiper-slide">{media_html}</div>'
-    
-                    carousel_html = f"""
-                    <link rel="stylesheet" href="https://unpkg.com/swiper@8.0.7/swiper-bundle.min.css">
-                    <style>
-                        .swiper {{
-                            width: 100%;
-                            height: auto;
-                        }}
-                        .swiper-slide {{
-                            text-align: center;
-                            display: flex;
-                            justify-content: center;
-                            align-items: center;
-                        }}
-                        .swiper-slide img, .swiper-slide video {{
-                            max-height: 400px;
-                            width: 100%;
-                            border-radius: 10px;
-                            box-shadow: 0px 5px 15px rgba(0,0,0,0.2);
-                            object-fit: contain;
-                        }}
-                        .swiper-pagination-fraction {{
-                            font-size: 18px;
-                            font-weight: bold;
-                            color: white;
-                            text-shadow: 0 0 5px rgba(0,0,0,0.5);
-                        }}
-                        .swiper-button-next,
-                        .swiper-button-prev {{
-                            width: 30px;
-                            height: 30px;
-                            background-color: rgba(0, 0, 0, 0.4);
-                            border-radius: 50%;
-                        }}
-                        .swiper-button-next:after,
-                        .swiper-button-prev:after {{
-                            font-size: 20px;
-                            color: white;
-                        }}
-                    </style>
-                    <div class="swiper mySwiper">
-                        <div class="swiper-wrapper">
-                            {carousel_items}
-                        </div>
-                        <div class="swiper-pagination"></div>
-                        <div class="swiper-button-next"></div>
-                        <div class="swiper-button-prev"></div>
-                    </div>
-                    <script src="https://unpkg.com/swiper@8.0.7/swiper-bundle.min.js"></script>
-                    <script>
-                        var swiper = new Swiper('.mySwiper', {{
-                            loop: true,
-                            zoom: true,
-                            pagination: {{
-                                el: '.swiper-pagination',
-                                type: 'fraction',
-                            }},
-                            navigation: {{
-                                nextEl: '.swiper-button-next',
-                                prevEl: '.swiper-button-prev',
-                            }},
-                        }});
-                    </script>
-                    """
-                    components.html(carousel_html, height=500)
-                else:
-                    st.info("No photos or videos available in this room")
-                
-                # Delete button with confirmation
-                if st.button(f"Permanently Delete {room}", key=f"del_room_{room}"):
-                    '''st.session_state['confirm_delete'] = room
-                
-                if st.session_state.get('confirm_delete') == room:
-                    st.error(f"**WARNING:** This will permanently delete {room} and all its contents!")
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        if st.button(f"Confirm Delete {room}", type="primary", key=f"conf_del_{room}"):'''
-                    if delete_room(room):
-                        st.success(f"Successfully deleted {room}!")
-                        #del st.session_state['confirm_delete']
-                        #import time
-                        #time.sleep(1)
-                        #st.rerun()
-                    else:
-                        st.error("Failed to delete some files. Check repository.")
-                    '''with col2:
-                        if st.button("Cancel", key=f"cancel_del_{room}"):
-                            del st.session_state['confirm_delete']'''
-
-
-    with tab5:
         st.header("🚮 Delete/Rename Rooms")
         search_term = st.text_input("Search rooms by name", key="delete_search").lower()
         
@@ -800,7 +627,8 @@ def admin_page():
                         key=f"rename_{room}"
                     )
                     if st.button("✏️ Rename Room", key=f"ren_btn_{room}"):
-                        if new_name.strip() == room:
+                        st.error("Rename not available do it manually")
+                        '''if new_name.strip() == room:
                             st.warning("Name unchanged")
                         elif not new_name.strip():
                             st.error("Please enter a new name")
@@ -810,7 +638,7 @@ def admin_page():
                                 st.success(f"Renamed to {new_name}!")
                                 st.rerun()
                             else:
-                                st.error(f"Rename failed: {message}")
+                                st.error(f"Rename failed: {message}")'''
                 
                 with col2:
                     # Delete section
@@ -821,13 +649,13 @@ def admin_page():
                         else:
                             st.error("Delete failed")
 
-                # Preview current content
+               
                 files = get_github_files(f"{BASE_PATH}/{room}")
                 media_files = [f for f in files if f['name'] != 'info.txt']
                 
                 if media_files:
-                    st.markdown("### Current Content Preview")
-                    # Add your carousel implementation here
+                    st.markdown("media files exists")
+                    #Add your carousel implementation here
                 else:
                     st.info("No media files in this room")
 
