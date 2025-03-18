@@ -238,10 +238,37 @@ def rename_room(old_name, new_name):
             f"https://api.github.com/repos/{GITHUB_REPO}/contents/{file['path']}",
             json={"message": f"Delete during rename", "sha": file['sha']}
         )
-        
+            
     except requests.exceptions.HTTPError as e:
-        # Handle specific errors
-
+        response = e.response
+        error_message = "An error occurred during the operation"
+        
+        try:
+            # Try to get GitHub's error message
+            error_data = response.json()
+            error_message = error_data.get("message", error_message)
+            details = error_data.get("errors", "")
+        except ValueError:
+            details = response.text
+    
+        # Handle specific status codes
+        if response.status_code == 401:
+            st.error("🔐 Authentication failed: Check your GitHub token")
+        elif response.status_code == 403:
+            reset_time = datetime.fromtimestamp(
+                int(response.headers.get('X-RateLimit-Reset', time.time() + 3600))
+            st.error(f"⏳ Rate limited: Try again after {reset_time.strftime('%Y-%m-%d %H:%M:%S')}")
+        elif response.status_code == 404:
+            st.error("🔍 Resource not found: The room or file may have been deleted")
+        elif response.status_code == 422:
+            st.error(f"📄 Validation error: {details}")
+        else:
+            st.error(f"🚨 Unexpected error ({response.status_code}): {error_message}")
+    
+        # Log technical details for debugging
+        st.markdown(f"```\nTechnical details: {error_message}\n{details}\n```")
+        
+        return False, error_message
 
 def admin_page():
     st.title("Admin Panel")
