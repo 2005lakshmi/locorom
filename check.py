@@ -654,7 +654,10 @@ def admin_page():
                 media_files = [f for f in files if f['name'] != 'info.txt']
                 
                 if media_files:
-                    st.markdown(f"media files exists, {media_files}")
+                    names = []
+                    for e in media_files:
+                        names.append(e['name'])
+                    st.markdown(f"media files exists, {names}")
                     #Add your carousel implementation here
                 else:
                     st.info("No media files in this room")
