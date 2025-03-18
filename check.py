@@ -702,7 +702,7 @@ def admin_page():
                             del st.session_state['confirm_delete']'''
 
 
-    with tab4:
+    with tab5:
         st.header("🚮 Delete/Rename Rooms")
         search_term = st.text_input("Search rooms by name", key="delete_search").lower()
         
