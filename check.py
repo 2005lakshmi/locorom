@@ -256,7 +256,7 @@ def rename_room(old_name, new_name):
             st.error("🔐 Authentication failed: Check your GitHub token")
         elif response.status_code == 403:
             reset_time = datetime.fromtimestamp(
-                int(response.headers.get('X-RateLimit-Reset', time.time() + 3600))
+                int(response.headers.get('X-RateLimit-Reset', time.time() + 3600)))
             st.error(f"⏳ Rate limited: Try again after {reset_time.strftime('%Y-%m-%d %H:%M:%S')}")
         elif response.status_code == 404:
             st.error("🔍 Resource not found: The room or file may have been deleted")
