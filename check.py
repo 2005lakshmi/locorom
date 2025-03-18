@@ -179,10 +179,53 @@ def delete_room(room_name):
                 success = False
     return success
 
+def rename_room(old_name, new_name):
+    """Renames a room directory and its contents"""
+    try:
+        # 1. Check if new room already exists
+        existing_rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
+        if new_name in existing_rooms:
+            return False, "New room name already exists"
+
+        # 2. Get all files from old room
+        old_files = get_github_files(f"{BASE_PATH}/{old_name}")
+        
+        # 3. Create new room directory by creating a dummy file
+        create_room_folder(new_name)
+        
+        # 4. Move all files to new location
+        for file in old_files:
+            if file['name'] == 'info.txt':  # Handle info file separately
+                content = base64.b64decode(file['content']).decode()
+                update_room_info(new_name, content)
+            else:
+                # Move regular files
+                new_path = f"{BASE_PATH}/{new_name}/{file['name']}"
+                requests.put(
+                    f"https://api.github.com/repos/{GITHUB_REPO}/contents/{new_path}",
+                    headers=HEADERS,
+                    json={
+                        "message": f"Move {file['name']} to {new_name}",
+                        "content": file['content'],
+                        "sha": file['sha']
+                    }
+                )
+            
+            # Delete old file
+            delete_file(file['path'], file['sha'])
+
+        # 5. Delete old room directory
+        delete_room(old_name)
+        
+        return True, "Room renamed successfully"
+    except Exception as e:
+        return False, str(e)
+
+
 
 def admin_page():
     st.title("Admin Panel")
-    tab1, tab2, tab3, tab4 = st.tabs(["Create Room", "Add Content", "Manage Files", "Delete Rooms"])
+    tab1, tab2, tab3, tab4, tab5= st.tabs(["Create Room", "Add Content", "Manage Files", "Delete Rooms","Rename room"])
     
                 
     with tab1:
@@ -658,6 +701,63 @@ def admin_page():
                         if st.button("Cancel", key=f"cancel_del_{room}"):
                             del st.session_state['confirm_delete']'''
 
+
+    with tab4:
+        st.header("🚮 Delete/Rename Rooms")
+        search_term = st.text_input("Search rooms by name", key="delete_search").lower()
+        
+        all_rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
+        filtered_rooms = [room for room in all_rooms if search_term in room.lower()]
+        
+        if not filtered_rooms:
+            st.info("No rooms found matching your search")
+            return
+
+        for room in filtered_rooms:
+            with st.expander(f"Room: **{room}**", expanded=False):
+                col1, col2 = st.columns([4, 2])
+                with col1:
+                    # Rename section
+                    new_name = st.text_input(
+                        "New room name",
+                        value=room,
+                        key=f"rename_{room}"
+                    )
+                    if st.button("✏️ Rename Room", key=f"ren_btn_{room}"):
+                        if new_name.strip() == room:
+                            st.warning("Name unchanged")
+                        elif not new_name.strip():
+                            st.error("Please enter a new name")
+                        else:
+                            success, message = rename_room(room, new_name.strip())
+                            if success:
+                                st.success(f"Renamed to {new_name}!")
+                                st.rerun()
+                            else:
+                                st.error(f"Rename failed: {message}")
+                
+                with col2:
+                    # Delete section
+                    if st.button("🗑️ Delete Room", key=f"del_{room}"):
+                        if delete_room(room):
+                            st.success("Room deleted!")
+                            st.rerun()
+                        else:
+                            st.error("Delete failed")
+
+                # Preview current content
+                files = get_github_files(f"{BASE_PATH}/{room}")
+                media_files = [f for f in files if f['name'] != 'info.txt']
+                
+                if media_files:
+                    st.markdown("### Current Content Preview")
+                    # Add your carousel implementation here
+                else:
+                    st.info("No media files in this room")
+
+
+
+    
 def default_page():
     #st.header("🔍 Room")
     st.markdown("""
