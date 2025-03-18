@@ -112,63 +112,89 @@ def delete_file(file_path, sha):
 
 
 def rename_file(old_path, new_name):
-    # Get file details from GitHub
-    file_url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{old_path}"
-    response = requests.get(file_url, headers=HEADERS)
-    
-    if response.status_code != 200:
-        st.error("Failed to fetch file details. Rename aborted.")
-        return False
+    try:
+        # Validate inputs
+        if not old_path or not new_name:
+            st.error("Invalid file paths provided")
+            return False
 
-    file_data = response.json()
-    file_sha = file_data.get("sha")
-    file_content = file_data.get("content")  # This is expected to be base64 encoded
+        # Get file details
+        file_url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{old_path}"
+        response = requests.get(file_url, headers=HEADERS)
+        
+        if response.status_code != 200:
+            st.error(f"Failed to fetch file details (HTTP {response.status_code})")
+            return False
 
-    # If content is missing, try to fetch it via the download_url
-    if not file_content and file_data.get("download_url"):
-        download_url = file_data.get("download_url")
-        download_response = requests.get(download_url)
-        if download_response.status_code == 200:
-            file_content = base64.b64encode(download_response.content).decode("utf-8")
-    
-    if not file_sha or not file_content:
-        st.error("File SHA or content missing. Rename failed.")
-        return False
+        file_data = response.json()
+        
+        # Validate response data
+        required_keys = ['sha', 'download_url', 'path', 'name']
+        if not all(key in file_data for key in required_keys):
+            st.error("Missing critical file metadata from GitHub")
+            return False
 
-    # Construct new file path
-    new_path = str(Path(old_path).parent / new_name)
+        # Get file content with fallback
+        file_content = file_data.get('content')
+        if not file_content:
+            download_response = requests.get(file_data['download_url'])
+            if download_response.status_code == 200:
+                file_content = base64.b64encode(download_response.content).decode('utf-8')
+            else:
+                st.error("Failed to fetch file content")
+                return False
 
-    # Create new file with the same content
-    create_url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{new_path}"
-    create_data = {
-        "message": f"Renaming {Path(old_path).name} to {new_name}",
-        "content": file_content,  # Reuse the existing file content (base64 encoded)
-        "branch": "main"  # Adjust branch if necessary
-    }
+        # Construct new path and verify not existing
+        new_path = str(Path(old_path).parent / new_name)
+        if get_github_files(new_path):
+            st.error("A file with the new name already exists")
+            return False
 
-    create_response = requests.put(create_url, json=create_data, headers=HEADERS)
+        # Create new file with retry logic
+        create_response = requests.put(
+            f"https://api.github.com/repos/{GITHUB_REPO}/contents/{new_path}",
+            headers=HEADERS,
+            json={
+                "message": f"Rename {Path(old_path).name} to {new_name}",
+                "content": file_content,
+                "branch": "main"
+            }
+        )
 
-    if create_response.status_code not in [200, 201]:
-        st.error("Failed to create the renamed file. Rename aborted.")
-        return False
+        if create_response.status_code not in [200, 201]:
+            st.error(f"Failed to create new file (HTTP {create_response.status_code})")
+            return False
 
-    # Delete the old file
-    delete_url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{old_path}"
-    delete_data = {
-        "message": f"Deleting old file {Path(old_path).name} after renaming.",
-        "sha": file_sha,
-        "branch": "main"  # Adjust if necessary
-    }
+        # Delete old file with verification
+        delete_response = requests.delete(
+            f"https://api.github.com/repos/{GITHUB_REPO}/contents/{old_path}",
+            headers=HEADERS,
+            json={
+                "message": f"Delete original file after renaming to {new_name}",
+                "sha": file_data['sha'],
+                "branch": "main"
+            }
+        )
 
-    delete_response = requests.delete(delete_url, json=delete_data, headers=HEADERS)
+        if delete_response.status_code != 200:
+            # Attempt to rollback new file creation
+            requests.delete(
+                f"https://api.github.com/repos/{GITHUB_REPO}/contents/{new_path}",
+                headers=HEADERS,
+                json={
+                    "message": "Rollback failed rename",
+                    "sha": create_response.json()['content']['sha']
+                }
+            )
+            st.error("Failed to delete original file - rolled back changes")
+            return False
 
-    if delete_response.status_code == 200:
         st.success("File renamed successfully! ✅")
         return True
-    else:
-        st.error("File renaming partially completed. New file created but old file not deleted.")
-        return False
 
+    except Exception as e:
+        st.error(f"Critical error during renaming: {str(e)}")
+        return False
 def delete_room(room_name):
     """Delete a room and all its contents"""
     files = get_github_files(f"{BASE_PATH}/{room_name}")
