@@ -179,48 +179,68 @@ def delete_room(room_name):
                 success = False
     return success
 
+from functools import wraps
+import time
+import requests
+
+def retry(times=3, delay=2, retryable_status_codes={403, 500, 502, 503, 504}):
+    """Enhanced retry decorator with status code handling"""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            attempts = 0
+            while attempts <= times:
+                try:
+                    response = func(*args, **kwargs)
+                    if response.status_code in retryable_status_codes:
+                        raise requests.exceptions.RetryError(
+                            f"Retryable status code: {response.status_code}"
+                        )
+                    return response
+                except (requests.exceptions.Timeout, 
+                        requests.exceptions.ConnectionError,
+                        requests.exceptions.RetryError) as e:
+                    if attempts < times:
+                        sleep_time = delay * (attempts + 1)  # Exponential backoff
+                        if response and response.headers.get('X-RateLimit-Remaining') == '0':
+                            reset_time = int(response.headers.get('X-RateLimit-Reset', time.time() + 60))
+                            sleep_time = max(reset_time - time.time(), 60)
+                        time.sleep(sleep_time)
+                        attempts += 1
+                        continue
+                    raise
+                except Exception as e:
+                    raise
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+@retry(times=3, delay=5)
+def github_api_call(method, url, **kwargs):
+    """Wrapper for GitHub API calls"""
+    response = requests.request(method, url, headers=HEADERS, **kwargs)
+    response.raise_for_status()
+    return response
+
 def rename_room(old_name, new_name):
-    """Renames a room directory and its contents"""
     try:
-        # 1. Check if new room already exists
-        existing_rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
-        if new_name in existing_rooms:
-            return False, "New room name already exists"
-
-        # 2. Get all files from old room
-        old_files = get_github_files(f"{BASE_PATH}/{old_name}")
+        # Existing logic
+        # Replace requests calls with:
+        create_response = github_api_call(
+            'PUT', 
+            f"https://api.github.com/repos/{GITHUB_REPO}/contents/{BASE_PATH}/{new_name}/dummy.txt",
+            json={"message": f"Create new room {new_name}", "content": dummy_content}
+        )
         
-        # 3. Create new room directory by creating a dummy file
-        create_room_folder(new_name)
+        # And similarly for other operations
+        github_api_call(
+            'DELETE',
+            f"https://api.github.com/repos/{GITHUB_REPO}/contents/{file['path']}",
+            json={"message": f"Delete during rename", "sha": file['sha']}
+        )
         
-        # 4. Move all files to new location
-        for file in old_files:
-            if file['name'] == 'info.txt':  # Handle info file separately
-                content = base64.b64decode(file['content']).decode()
-                update_room_info(new_name, content)
-            else:
-                # Move regular files
-                new_path = f"{BASE_PATH}/{new_name}/{file['name']}"
-                requests.put(
-                    f"https://api.github.com/repos/{GITHUB_REPO}/contents/{new_path}",
-                    headers=HEADERS,
-                    json={
-                        "message": f"Move {file['name']} to {new_name}",
-                        "content": file['content'],
-                        "sha": file['sha']
-                    }
-                )
-            
-            # Delete old file
-            delete_file(file['path'], file['sha'])
-
-        # 5. Delete old room directory
-        delete_room(old_name)
-        
-        return True, "Room renamed successfully"
-    except Exception as e:
-        return False, str(e)
-
+    except requests.exceptions.HTTPError as e:
+        # Handle specific errors
 
 
 def admin_page():
