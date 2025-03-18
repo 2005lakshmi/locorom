@@ -224,6 +224,9 @@ def github_api_call(method, url, **kwargs):
 
 def rename_room(old_name, new_name):
     try:
+
+        dummy_content = base64.b64encode(b"Initial file").decode('utf-8')  # <-- FIX HERE
+    
         # Existing logic
         # Replace requests calls with:
         create_response = github_api_call(
