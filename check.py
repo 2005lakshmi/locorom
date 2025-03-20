@@ -675,7 +675,7 @@ def default_page():
     
     if search_term == st.secrets["general"]["password"]:
         st.session_state.page = "Admin Page"
-        st.experimental_rerun()
+        st.rerun()
         return
 
     rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
