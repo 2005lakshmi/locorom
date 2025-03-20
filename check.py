@@ -121,19 +121,21 @@ def get_next_file_number(room_name, subfolder=None):
                 continue
     return max(numbers) + 1 if numbers else 1
 
-def upload_room_file(room_name, file_data, file_type, subfolder=None):
+def upload_room_file(room_name, file_data, file_type):
     try:
         ext = file_type.split('/')[-1]
-        if ext == 'jpeg': ext = 'jpg'
+        if ext == 'jpeg':
+            ext = 'jpg'
             
-        next_num = get_next_file_number(room_name, subfolder)
-        base_path = f"{BASE_PATH}/{room_name}"
-        if subfolder: base_path += f"/{subfolder}"
-        file_path = f"{base_path}/{next_num}.{ext}"
+        next_num = get_next_file_number(room_name)
+        file_path = f"{BASE_PATH}/{room_name}/{next_num}.{ext}"
         
+        # Read file data only once
         content = base64.b64encode(file_data.read()).decode()
+        file_data.seek(0)  # Reset file pointer
+        
         data = {
-            "message": f"Add file to {room_name}" + (f"/{subfolder}" if subfolder else ""),
+            "message": f"Add file {next_num}.{ext} to {room_name}",
             "content": content
         }
         response = requests.put(
@@ -141,6 +143,11 @@ def upload_room_file(room_name, file_data, file_type, subfolder=None):
             json=data,
             headers=HEADERS
         )
+        
+        if response.status_code == 201:
+            st.session_state.upload_counter += 1
+            st.experimental_rerun()
+            
         return response.status_code == 201
     except Exception as e:
         st.error(f"Error uploading file: {str(e)}")
