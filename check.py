@@ -180,6 +180,21 @@ def get_room_info(room_name):
         st.error(f"Error fetching room info: {str(e)}")
         return "Information unavailable"
 
+def delete_file(file_path, sha):
+    """Delete a file from GitHub repository"""
+    try:
+        url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{file_path}"
+        data = {
+            "message": f"Delete file {Path(file_path).name}",
+            "sha": sha
+        }
+        response = requests.delete(url, json=data, headers=HEADERS)
+        return response.status_code == 200
+    except Exception as e:
+        st.error(f"Delete failed: {str(e)}")
+        return False
+
+
 
 def display_main_content(room_name):
     """Display main content for a room without subfolders"""
@@ -201,8 +216,8 @@ def display_main_content(room_name):
                 media_html = f"""
                     <video controls style="max-height: 400px; width: 100%;">
                         <source src="{file['download_url']}" type="video/mp4">
-                    </video>
-                """
+                    </video>"""
+            
                 
             else:
                 media_html = f'<img src="{file["download_url"]}" style="max-height: 400px; width: 100%; object-fit: contain;">'
