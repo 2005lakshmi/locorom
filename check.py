@@ -121,49 +121,46 @@ def get_next_file_number(room_name, subfolder=None):
                 continue
     return max(numbers) + 1 if numbers else 1
 
-def upload_room_file(room_name, uploaded_file, file_type, subfolder=None):
-    """Upload file to room or subfolder with proper type handling"""
+def upload_room_file(room, uploaded_file, file_type, subfolder=None):
+    """Upload file to room or subfolder"""
     try:
-        # Get file extension
         ext = file_type.split('/')[-1].lower()
         if ext == 'jpeg':
             ext = 'jpg'
-        
-        # Get target path
-        base_path = f"{BASE_PATH}/{room_name}"
+            
+        base_path = f"{BASE_PATH}/{room}"
         if subfolder:
             base_path += f"/{subfolder}"
-        
+            
         # Get next file number
         files = get_github_files(base_path)
-        numbers = [int(Path(f['name']).stem for f in files if (f['type'] == 'file' and Path(f['name']).stem.isdigit() ) ) ]
+        numbers = [
+            int(Path(f['name']).stem
+            for f in files
+            if f['type'] == 'file' and Path(f['name']).stem.isdigit()
+        ]
         next_num = max(numbers) + 1 if numbers else 1
 
-        # Create full path
         file_path = f"{base_path}/{next_num}.{ext}"
+        content = base64.b64encode(uploaded_file.read()).decode()
         
-        # Read file content once
-        file_data = uploaded_file.read()
-        
-        # Encode and upload
-        content = base64.b64encode(file_data).decode()
         data = {
-            "message": f"Add file to {room_name}" + (f"/{subfolder}" if subfolder else ""),
+            "message": f"Add file to {room}" + (f"/{subfolder}" if subfolder else ""),
             "content": content
         }
+        
         response = requests.put(
             f"https://api.github.com/repos/{GITHUB_REPO}/contents/{file_path}",
             json=data,
             headers=HEADERS
         )
-        
-        # Clear file buffer
-        uploaded_file.seek(0)
         return response.status_code == 201
         
     except Exception as e:
         st.error(f"Upload error: {str(e)}")
         return False
+
+
         
 def get_room_info(room_name):
     """Get room information from info.txt"""
