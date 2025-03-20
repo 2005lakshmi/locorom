@@ -514,7 +514,7 @@ def default_page():
     
     if search_term == st.secrets["general"]["password"]:
         st.session_state.page = "Admin Page"
-        st.experimental_rerun()
+        st.rerun()
         return
 
     # Rest of the room search logic
