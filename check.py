@@ -529,63 +529,55 @@ def admin_page():
         
 
 
-    with tab5:
-        st.header("🚮 Delete/Rename Rooms")
-        search_term = st.text_input("Search rooms by name", key="delete_search").lower()
-        
-        all_rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
-        filtered_rooms = [room for room in all_rooms if search_term in room.lower()]
-        
-        if not filtered_rooms:
-            st.info("No rooms found matching your search")
-            return
+with tab5:
+    st.header("🚮 Delete/Rename Rooms")
+    search_term = st.text_input("Search rooms by name", key="delete_search").lower()
+    
+    all_rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
+    filtered_rooms = [room for room in all_rooms if search_term in room.lower()]
+    
+    if not filtered_rooms:
+        st.info("No rooms found matching your search")
+        return
 
-        for room in filtered_rooms:
-            with st.expander(f"Room: **{room}**", expanded=False):
-                col1, col2 = st.columns([4, 2])
-                with col1:
-                    # Rename section
-                    new_name = st.text_input(
-                        "New room name",
-                        value=room,
-                        key=f"rename_{room}"
-                    )
-                    if st.button("✏️ Rename Room", key=f"ren_btn_{room}"):
-                        st.error("Rename not available do it manually")
-                        '''if new_name.strip() == room:
-                            st.warning("Name unchanged")
-                        elif not new_name.strip():
-                            st.error("Please enter a new name")
-                        else:
-                            success, message = rename_room(room, new_name.strip())
-                            if success:
-                                st.success(f"Renamed to {new_name}!")
-                                st.rerun()
-                            else:
-                                st.error(f"Rename failed: {message}")'''
-                
-                with col2:
-                    # Delete section
-                    if st.button("🗑️ Delete Room", key=f"del_{room}"):
-                        if delete_room(room):
-                            st.success("Room deleted!")
+    for room in filtered_rooms:
+        with st.expander(f"Room: **{room}**", expanded=False):
+            col1, col2 = st.columns([4, 2])
+            with col1:
+                # Rename section - Fixed commented code
+                new_name = st.text_input(
+                    "New room name",
+                    value=room,
+                    key=f"rename_{room}"
+                )
+                if st.button("✏️ Rename Room", key=f"ren_btn_{room}"):
+                    st.error("Rename functionality currently disabled")
+                    # Uncomment and modify this when implementing actual rename functionality
+                    
+                    if new_name.strip() == room:
+                        st.warning("Name unchanged")
+                    elif not new_name.strip():
+                        st.error("Please enter a new name")
+                    else:
+                        success = rename_room(room, new_name.strip())
+                        if success:
+                            st.success(f"Renamed to {new_name}!")
                             st.rerun()
                         else:
-                            st.error("Delete failed")
-
-               
-                files = get_github_files(f"{BASE_PATH}/{room}")
-                media_files = [f for f in files if f['name'] != 'info.txt']
+                            st.error("Rename failed")
                 
-                if media_files:
-                    names = []
-                    for e in media_files:
-                        names.append(e['name'])
-                    st.markdown(f"media files exists, {names}")
-                    #Add your carousel implementation here
-                else:
-                    st.info("No media files in this room")
-
+            
+            with col2:
+                # Delete section
+                if st.button("🗑️ Delete Room", key=f"del_{room}"):
+                    if delete_room(room):
+                        st.success("Room deleted!")
+                        st.rerun()
+                    else:
+                        st.error("Delete failed")
+                    
+                
+                
 
 
 
