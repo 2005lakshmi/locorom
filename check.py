@@ -332,6 +332,8 @@ def display_subfolder_content(room, subfolder):
 def admin_page():
     st.title("Admin Panel")
     tab1, tab2, tab3, tab4, tab5 = st.tabs(["Create Room", "Add Content", "Manage Subfolders", "Manage Files", "Delete Rooms"])
+
+
     
     with tab1:
         with st.form("create_room"):
@@ -346,9 +348,13 @@ def admin_page():
                     else:
                         st.error("Failed to create room")
 
+    if 'upload_counter' not in st.session_state:
+        st.session_state.upload_counter = 0
+    
     with tab2:
         st.header("📤 Add Content")
         search_term = st.text_input("Search rooms by name", key="content_search").lower()
+        
         all_rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
         filtered_rooms = [room for room in all_rooms if search_term in room.lower()]
         
@@ -368,17 +374,18 @@ def admin_page():
                 uploaded_file = st.file_uploader(
                     "Choose file",
                     type=['jpg', 'jpeg', 'png', 'gif', 'mp4'],
-                    key=f"upload_{room}"
+                    key=f"upload_{room}_{st.session_state.upload_counter}"
                 )
                 
                 if uploaded_file:
                     success = upload_room_file(
-                    room=room,
-                    uploaded_file=uploaded_file,
-                    file_type=uploaded_file.type,
-                    subfolder=selected_sub if selected_sub != "Main" else None
+                        room=room,
+                        uploaded_file=uploaded_file,
+                        file_type=uploaded_file.type,
+                        subfolder=selected_sub if selected_sub != "Main" else None
                     )
                     if success:
+                        # Safe counter increment
                         st.session_state.upload_counter += 1
                         st.rerun()
 
