@@ -385,6 +385,7 @@ def admin_page():
                         subfolder=selected_sub if selected_sub != "Main" else None
                     )
                     if success:
+                        st.success("file uploaded")
                         # Safe counter increment
                         st.session_state.upload_counter += 1
                         st.rerun()
