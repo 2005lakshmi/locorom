@@ -504,20 +504,28 @@ def admin_page():
 # Default Page
 def default_page():
     st.markdown("""
-    <h1>🔍 Room <span style="color: green;font-size: 15px;">[MITM]</span></h1>
+    <h1>
+    🔍 Room <span style="color: green;font-size: 15px;">[MITM]</span>
+    </h1>
     """, unsafe_allow_html=True)
 
-    rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
-    search_term = st.text_input("**Search Room**", "", placeholder="example., B-003").lower()
-    filtered_rooms = [room for room in rooms if search_term in room.lower()]
-
+    # Check for admin password first
+    search_term = st.text_input("**Search Room**", "", placeholder="example., 415B").strip().lower()
+    
     if search_term == st.secrets["general"]["password"]:
         st.session_state.page = "Admin Page"
-        st.success("Password correct! Redirecting to Admin Page...")
-        st.rerun()
+        st.experimental_rerun()
+        return
+
+    # Rest of the room search logic
+    rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
+    filtered_rooms = [room for room in rooms if search_term in room.lower()]
 
     if not filtered_rooms:
-        st.error("No rooms found" if search_term else "Enter room number to find..!")
+        if not search_term:
+            st.error("Please enter room number to search..!")
+        else:
+            st.error(f"No rooms found with search: {search_term}..!")
         return
 
     selected_room = st.radio("Select Room", filtered_rooms)
@@ -581,9 +589,11 @@ def display_subfolder_content(room, subfolder):
 
 # Main app execution
 def main():
+    # Initialize session state
     if 'page' not in st.session_state:
         st.session_state.page = "Default Page"
 
+    # Check current page state
     if st.session_state.page == "Admin Page":
         admin_page()
     else:
