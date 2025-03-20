@@ -121,21 +121,35 @@ def get_next_file_number(room_name, subfolder=None):
                 continue
     return max(numbers) + 1 if numbers else 1
 
-def upload_room_file(room_name, file_data, file_type):
+def upload_room_file(room_name, uploaded_file, file_type, subfolder=None):
+    """Upload file to room or subfolder with proper type handling"""
     try:
-        ext = file_type.split('/')[-1]
+        # Get file extension
+        ext = file_type.split('/')[-1].lower()
         if ext == 'jpeg':
             ext = 'jpg'
-            
-        next_num = get_next_file_number(room_name)
-        file_path = f"{BASE_PATH}/{room_name}/{next_num}.{ext}"
         
-        # Read file data only once
-        content = base64.b64encode(file_data.read()).decode()
-        file_data.seek(0)  # Reset file pointer
+        # Get target path
+        base_path = f"{BASE_PATH}/{room_name}"
+        if subfolder:
+            base_path += f"/{subfolder}"
         
+        # Get next file number
+        files = get_github_files(base_path)
+        numbers = [int(Path(f['name']).stem for f in files 
+                 if f['type'] == 'file' and f['name'].split('.')[0].isdigit()]
+        next_num = max(numbers) + 1 if numbers else 1
+
+        # Create full path
+        file_path = f"{base_path}/{next_num}.{ext}"
+        
+        # Read file content once
+        file_data = uploaded_file.read()
+        
+        # Encode and upload
+        content = base64.b64encode(file_data).decode()
         data = {
-            "message": f"Add file {next_num}.{ext} to {room_name}",
+            "message": f"Add file to {room_name}" + (f"/{subfolder}" if subfolder else ""),
             "content": content
         }
         response = requests.put(
@@ -144,15 +158,14 @@ def upload_room_file(room_name, file_data, file_type):
             headers=HEADERS
         )
         
-        if response.status_code == 201:
-            st.session_state.upload_counter += 1
-            st.experimental_rerun()
-            
+        # Clear file buffer
+        uploaded_file.seek(0)
         return response.status_code == 201
+        
     except Exception as e:
-        st.error(f"Error uploading file: {str(e)}")
+        st.error(f"Upload error: {str(e)}")
         return False
-
+        
 def get_room_info(room_name):
     """Get room information from info.txt"""
     info_path = f"{BASE_PATH}/{room_name}/info.txt"
@@ -361,13 +374,15 @@ def admin_page():
                 )
                 
                 if uploaded_file:
-                    sub = selected_sub if selected_sub != "Main" else None
-                    if upload_room_file(room, uploaded_file, uploaded_file.type, sub):
-                        st.success("Upload successful!")
-                        time.sleep(1)
+                    success = upload_room_file(
+                    room=room,
+                    uploaded_file=uploaded_file,
+                    file_type=uploaded_file.type,
+                    subfolder=selected_sub if selected_sub != "Main" else None
+                    )
+                    if success:
+                        st.session_state.upload_counter += 1
                         st.rerun()
-                    else:
-                        st.error("Upload failed")
 
 
     with tab3:
