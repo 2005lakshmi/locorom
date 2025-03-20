@@ -153,11 +153,32 @@ def upload_room_file(room_name, file_data, file_type):
         st.error(f"Error uploading file: {str(e)}")
         return False
 
+def get_room_info(room_name):
+    """Get room information from info.txt"""
+    info_path = f"{BASE_PATH}/{room_name}/info.txt"
+    try:
+        response = requests.get(
+            f"https://api.github.com/repos/{GITHUB_REPO}/contents/{info_path}",
+            headers=HEADERS
+        )
+        if response.status_code == 200:
+            content = base64.b64decode(response.json()['content']).decode()
+            return content
+        return "No information available"
+    except Exception as e:
+        st.error(f"Error fetching room info: {str(e)}")
+        return "Information unavailable"
+
+
 def display_main_content(room_name):
+    """Display main content for a room without subfolders"""
     st.markdown("### Main Area")
+    
+    # Get room information
     info_content = get_room_info(room_name)
     st.markdown(f"*General Information:*\n\n{info_content}")
     
+    # Get media files
     files = get_github_files(f"{BASE_PATH}/{room_name}")
     media_files = [f for f in files if f['name'] != 'info.txt']
     
@@ -171,6 +192,7 @@ def display_main_content(room_name):
                         <source src="{file['download_url']}" type="video/mp4">
                     </video>
                 """
+                
             else:
                 media_html = f'<img src="{file["download_url"]}" style="max-height: 400px; width: 100%; object-fit: contain;">'
             carousel_items += f'<div class="swiper-slide">{media_html}</div>'
@@ -261,6 +283,37 @@ def display_subfolder_content(room_name, subfolder):
 
 
 
+def display_subfolder_content(room, subfolder):
+    st.markdown(f"### {subfolder}")
+    info = get_subfolder_info(room, subfolder)
+    st.markdown(f"*Location Details:*\n\n{info}")
+    
+    path = f"{BASE_PATH}/{room}/{subfolder}"
+    files = get_github_files(path)
+    media_files = [f for f in files if f['name'] not in ['info.txt', 'thumbnail.jpg']]
+    
+    if media_files:
+        carousel_items = ""
+        for file in media_files:
+            ext = file['name'].split('.')[-1].lower()
+            if ext == "mp4":
+                media_html = f"""
+                <video controls style="max-height: 400px; width: 100%;">
+                    <source src="{file['download_url']}" type="video/mp4">
+                </video>
+                """
+            else:
+                media_html = f'<img src="{file["download_url"]}" style="max-height: 400px; width: 100%; object-fit: contain;">'
+            carousel_items += f'<div class="swiper-slide">{media_html}</div>'
+
+        components.html(f"""
+        <!-- Swiper carousel implementation -->
+        {carousel_items}
+        """, height=500)
+    else:
+        st.info("No media files available for this access point")
+
+
 
 
 
@@ -315,6 +368,7 @@ def admin_page():
                         st.rerun()
                     else:
                         st.error("Upload failed")
+
 
     with tab3:
         st.header("📂 Manage Subfolders")
@@ -529,53 +583,53 @@ def admin_page():
         
 
 
-with tab5:
-    st.header("🚮 Delete/Rename Rooms")
-    search_term = st.text_input("Search rooms by name", key="delete_search").lower()
+    with tab5:
+        st.header("🚮 Delete/Rename Rooms")
+        search_term = st.text_input("Search rooms by name", key="delete_search").lower()
+        
+        all_rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
+        filtered_rooms = [room for room in all_rooms if search_term in room.lower()]
+        
+        if not filtered_rooms:
+            st.info("No rooms found matching your search")
+            return
     
-    all_rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
-    filtered_rooms = [room for room in all_rooms if search_term in room.lower()]
-    
-    if not filtered_rooms:
-        st.info("No rooms found matching your search")
-        return
-
-    for room in filtered_rooms:
-        with st.expander(f"Room: **{room}**", expanded=False):
-            col1, col2 = st.columns([4, 2])
-            with col1:
-                # Rename section - Fixed commented code
-                new_name = st.text_input(
-                    "New room name",
-                    value=room,
-                    key=f"rename_{room}"
-                )
-                if st.button("✏️ Rename Room", key=f"ren_btn_{room}"):
-                    st.error("Rename functionality currently disabled")
-                    # Uncomment and modify this when implementing actual rename functionality
+        for room in filtered_rooms:
+            with st.expander(f"Room: **{room}**", expanded=False):
+                col1, col2 = st.columns([4, 2])
+                with col1:
+                    # Rename section - Fixed commented code
+                    new_name = st.text_input(
+                        "New room name",
+                        value=room,
+                        key=f"rename_{room}"
+                    )
+                    if st.button("✏️ Rename Room", key=f"ren_btn_{room}"):
+                        st.error("Rename functionality currently disabled")
+                        # Uncomment and modify this when implementing actual rename functionality
+                        
+                        if new_name.strip() == room:
+                            st.warning("Name unchanged")
+                        elif not new_name.strip():
+                            st.error("Please enter a new name")
+                        else:
+                            success = rename_room(room, new_name.strip())
+                            if success:
+                                st.success(f"Renamed to {new_name}!")
+                                st.rerun()
+                            else:
+                                st.error("Rename failed")
                     
-                    if new_name.strip() == room:
-                        st.warning("Name unchanged")
-                    elif not new_name.strip():
-                        st.error("Please enter a new name")
-                    else:
-                        success = rename_room(room, new_name.strip())
-                        if success:
-                            st.success(f"Renamed to {new_name}!")
+                
+                with col2:
+                    # Delete section
+                    if st.button("🗑️ Delete Room", key=f"del_{room}"):
+                        if delete_room(room):
+                            st.success("Room deleted!")
                             st.rerun()
                         else:
-                            st.error("Rename failed")
-                
-            
-            with col2:
-                # Delete section
-                if st.button("🗑️ Delete Room", key=f"del_{room}"):
-                    if delete_room(room):
-                        st.success("Room deleted!")
-                        st.rerun()
-                    else:
-                        st.error("Delete failed")
-                    
+                            st.error("Delete failed")
+                        
                 
                 
 
@@ -647,35 +701,6 @@ def default_page():
     else:
         display_main_content(selected_room)
         
-def display_subfolder_content(room, subfolder):
-    st.markdown(f"### {subfolder}")
-    info = get_subfolder_info(room, subfolder)
-    st.markdown(f"*Location Details:*\n\n{info}")
-    
-    path = f"{BASE_PATH}/{room}/{subfolder}"
-    files = get_github_files(path)
-    media_files = [f for f in files if f['name'] not in ['info.txt', 'thumbnail.jpg']]
-    
-    if media_files:
-        carousel_items = ""
-        for file in media_files:
-            ext = file['name'].split('.')[-1].lower()
-            if ext == "mp4":
-                media_html = f"""
-                <video controls style="max-height: 400px; width: 100%;">
-                    <source src="{file['download_url']}" type="video/mp4">
-                </video>
-                """
-            else:
-                media_html = f'<img src="{file["download_url"]}" style="max-height: 400px; width: 100%; object-fit: contain;">'
-            carousel_items += f'<div class="swiper-slide">{media_html}</div>'
-
-        components.html(f"""
-        <!-- Swiper carousel implementation -->
-        {carousel_items}
-        """, height=500)
-    else:
-        st.info("No media files available for this access point")
 
 # Main app execution
 def main():
