@@ -146,6 +146,117 @@ def upload_room_file(room_name, file_data, file_type, subfolder=None):
         st.error(f"Error uploading file: {str(e)}")
         return False
 
+def display_main_content(room_name):
+    st.markdown("### Main Area")
+    info_content = get_room_info(room_name)
+    st.markdown(f"*General Information:*\n\n{info_content}")
+    
+    files = get_github_files(f"{BASE_PATH}/{room_name}")
+    media_files = [f for f in files if f['name'] != 'info.txt']
+    
+    if media_files:
+        carousel_items = ""
+        for file in media_files:
+            ext = file['name'].split('.')[-1].lower()
+            if ext == "mp4":
+                media_html = f"""
+                    <video controls style="max-height: 400px; width: 100%;">
+                        <source src="{file['download_url']}" type="video/mp4">
+                    </video>
+                """
+            else:
+                media_html = f'<img src="{file["download_url"]}" style="max-height: 400px; width: 100%; object-fit: contain;">'
+            carousel_items += f'<div class="swiper-slide">{media_html}</div>'
+
+        carousel_html = f"""
+        <link rel="stylesheet" href="https://unpkg.com/swiper@8.0.7/swiper-bundle.min.css">
+        <style>
+            .swiper {{
+                width: 100%;
+                height: auto;
+            }}
+            .swiper-slide {{
+                text-align: center;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }}
+            .swiper-slide img, .swiper-slide video {{
+                max-height: 400px;
+                width: 100%;
+                border-radius: 10px;
+                box-shadow: 0px 5px 15px rgba(0,0,0,0.2);
+                object-fit: contain;
+            }}
+        </style>
+        <div class="swiper mySwiper">
+            <div class="swiper-wrapper">
+                {carousel_items}
+            </div>
+            <div class="swiper-pagination"></div>
+            <div class="swiper-button-next"></div>
+            <div class="swiper-button-prev"></div>
+        </div>
+        <script src="https://unpkg.com/swiper@8.0.7/swiper-bundle.min.js"></script>
+        <script>
+            var swiper = new Swiper('.mySwiper', {{
+                loop: true,
+                zoom: true,
+                pagination: {{
+                    el: '.swiper-pagination',
+                    type: 'fraction',
+                }},
+                navigation: {{
+                    nextEl: '.swiper-button-next',
+                    prevEl: '.swiper-button-prev',
+                }},
+            }});
+        </script>
+        """
+        components.html(carousel_html, height=500)
+    else:
+        st.info("No media files available for this room")
+
+def display_subfolder_content(room_name, subfolder):
+    info = get_subfolder_info(room_name, subfolder)
+    st.markdown(f"### {subfolder}")
+    st.markdown(f"*Location Details:*\n\n{info}")
+    
+    path = f"{BASE_PATH}/{room_name}/{subfolder}"
+    files = get_github_files(path)
+    media_files = [f for f in files if f['name'] not in ['info.txt', 'thumbnail.jpg']]
+    
+    if media_files:
+        carousel_items = ""
+        for file in media_files:
+            ext = file['name'].split('.')[-1].lower()
+            if ext == "mp4":
+                media_html = f"""
+                    <video controls style="max-height: 400px; width: 100%;">
+                        <source src="{file['download_url']}" type="video/mp4">
+                    </video>
+                """
+            else:
+                media_html = f'<img src="{file["download_url"]}" style="max-height: 400px; width: 100%; object-fit: contain;">'
+            carousel_items += f'<div class="swiper-slide">{media_html}</div>'
+
+        components.html(f"""
+        <link rel="stylesheet" href="https://unpkg.com/swiper@8/swiper-bundle.min.css">
+        <div class="swiper">
+            <div class="swiper-wrapper">
+                {carousel_items}
+            </div>
+        </div>
+        <script src="https://unpkg.com/swiper@8/swiper-bundle.min.js"></script>
+        """, height=500)
+    else:
+        st.info("No media files available for this access point")
+
+
+
+
+
+
 # Admin Page
 def admin_page():
     st.title("Admin Panel")
@@ -504,59 +615,39 @@ def admin_page():
 # Default Page
 def default_page():
     st.markdown("""
-    <h1>
-    🔍 Room <span style="color: green;font-size: 15px;">[MITM]</span>
-    </h1>
+    <h1>🔍 Room <span style="color: green;font-size: 15px;">[MITM]</span></h1>
     """, unsafe_allow_html=True)
 
-    # Check for admin password first
     search_term = st.text_input("**Search Room**", "", placeholder="example., 415B").strip().lower()
     
     if search_term == st.secrets["general"]["password"]:
         st.session_state.page = "Admin Page"
-        st.rerun()
+        st.experimental_rerun()
         return
 
-    # Rest of the room search logic
     rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
     filtered_rooms = [room for room in rooms if search_term in room.lower()]
 
     if not filtered_rooms:
-        if not search_term:
-            st.error("Please enter room number to search..!")
-        else:
-            st.error(f"No rooms found with search: {search_term}..!")
+        st.error("No rooms found" if search_term else "Please enter room number to search..!")
         return
 
     selected_room = st.radio("Select Room", filtered_rooms)
     st.subheader(f"Room: {selected_room}")
-
-    # Subfolder handling
-    subfolders = get_subfolders(selected_room)
     
+    subfolders = get_subfolders(selected_room)
     if subfolders:
-        st.markdown("### Choose where you are approx")
+        st.markdown("### Choose your approximate location")
         cols = st.columns(4)
-        thumbnail_html = "<div style='display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;'>"
-        
         for idx, sub in enumerate(subfolders):
-            thumbnail_url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/main/{BASE_PATH}/{selected_room}/{sub}/thumbnail.jpg"
-            thumbnail_html += f"""
-            <div style='flex: 1 0 21%; margin: 10px; text-align: center;'>
-                <img src="{thumbnail_url}" style="width: 100%; height: 150px; object-fit: cover; border-radius: 10px; cursor: pointer;"
-                     onclick="window.streamlit.setComponentValue('{sub}')">
-                <p style="margin: 5px 0; font-weight: bold;">{sub}</p>
-            </div>
-            """
-        
-        thumbnail_html += "</div>"
-        selected_sub = components.html(thumbnail_html, height=200)
-        
-        if selected_sub:
-            display_subfolder_content(selected_room, selected_sub)
+            with cols[idx % 4]:
+                thumbnail_url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/main/{BASE_PATH}/{selected_room}/{sub}/thumbnail.jpg"
+                st.image(thumbnail_url, use_column_width=True)
+                if st.button(sub):
+                    display_subfolder_content(selected_room, sub)
     else:
         display_main_content(selected_room)
-
+        
 def display_subfolder_content(room, subfolder):
     st.markdown(f"### {subfolder}")
     info = get_subfolder_info(room, subfolder)
@@ -599,6 +690,8 @@ def main():
     else:
         default_page()
         # Footer content
+
+
 
 if __name__ == "__main__":
     main()
