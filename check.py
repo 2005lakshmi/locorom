@@ -132,12 +132,15 @@ def upload_room_file(room, uploaded_file, file_type, subfolder=None):
         if subfolder:
             base_path += f"/{subfolder}"
             
-        # Get next file number
+        # Get next file number with proper list comprehension
         files = get_github_files(base_path)
         numbers = [
-            int(Path(f['name']).stem
+            int(Path(f['name']).stem)  # Convert filename stem to integer
             for f in files
-            if f['type'] == 'file' and Path(f['name']).stem.isdigit() )
+            if (
+                f['type'] == 'file' 
+                and Path(f['name']).stem.isdigit()  # Verify numeric filename
+            )
         ]
         next_num = max(numbers) + 1 if numbers else 1
 
@@ -145,7 +148,7 @@ def upload_room_file(room, uploaded_file, file_type, subfolder=None):
         content = base64.b64encode(uploaded_file.read()).decode()
         
         data = {
-            "message": f"Add file to {room}" + (f"/{subfolder}" if subfolder else ""),
+            "message": f"Add file {next_num}.{ext} to {base_path}",
             "content": content
         }
         
@@ -159,7 +162,6 @@ def upload_room_file(room, uploaded_file, file_type, subfolder=None):
     except Exception as e:
         st.error(f"Upload error: {str(e)}")
         return False
-
 
         
 def get_room_info(room_name):
