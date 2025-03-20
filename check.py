@@ -137,7 +137,7 @@ def upload_room_file(room, uploaded_file, file_type, subfolder=None):
         numbers = [
             int(Path(f['name']).stem
             for f in files
-            if f['type'] == 'file' and Path(f['name']).stem.isdigit()
+            if f['type'] == 'file' and Path(f['name']).stem.isdigit() )
         ]
         next_num = max(numbers) + 1 if numbers else 1
 
