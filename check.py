@@ -136,8 +136,7 @@ def upload_room_file(room_name, uploaded_file, file_type, subfolder=None):
         
         # Get next file number
         files = get_github_files(base_path)
-        numbers = [int(Path(f['name']).stem for f in files 
-           if (f['type'] == 'file' and Path(f['name']).stem.isdigit())]
+        numbers = [int(Path(f['name']).stem for f in files if (f['type'] == 'file' and Path(f['name']).stem.isdigit())]
         next_num = max(numbers) + 1 if numbers else 1
 
         # Create full path
