@@ -718,7 +718,7 @@ def default_page():
     # Check for admin password
     if search_term == st.secrets["general"]["password"]:
         st.session_state.page = "Admin Page"
-        st.experimental_rerun()
+        st.rerun()
         return
 
     # Get filtered rooms
