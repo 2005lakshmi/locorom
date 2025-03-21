@@ -219,7 +219,7 @@ def display_main_content(room_name):
             st.markdown(info_content)
 
 
-        st.markdown("##### Photos")
+        st.markdown("##### Photos :")
         # Main Area Carousel
         display_carousel(main_media, zoom=True)
     else:
@@ -239,11 +239,13 @@ def display_main_content(room_name):
             st.image(thumbnail_url, width=200)  # Fixed width instead of use_column_width
         with col2:
             sub_info = get_subfolder_info(room_name, sub)
+            st.markdown("##### Location Info:")
             st.markdown(sub_info)
         
         # Subfolder media carousel
         sub_media = [f for f in sub_files if f['name'] not in ['info.txt', 'thumbnail.jpg']]
         if sub_media:
+            st.markdown("##### Photos:")
             display_carousel(sub_media, zoom=True)
         else:
             st.info(f"No media available in {sub}")
