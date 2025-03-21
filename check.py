@@ -429,24 +429,20 @@ def admin_page():
     tab1, tab2, tab3, tab4, tab5= st.tabs(["Create Room", "Add Content", "Manage Subfolders", "Manage Files", "🚮 Delete/Rename Rooms"])
 
 
+    # Create Room Tab (Tab1)
     with tab1:
         with st.form(key="create_room_form"):
-            room_name = st.text_input("Room Name")
+            room_name = st.text_input("Room Name", key="room_name_input")
             submit_button = st.form_submit_button("Create Room")
-            
             if submit_button:
                 existing_rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
-                if not room_name:
-                    st.error("Please enter a room name")
-                elif room_name in existing_rooms:
+                if room_name in existing_rooms:
                     st.error("Room already exists")
                 else:
                     if create_room_folder(room_name):
                         st.success(f"Room **{room_name}** created successfully!")
-                        st.rerun()
                     else:
                         st.error("Failed to create room")
-
 
                         
     if 'upload_counter' not in st.session_state:
@@ -544,80 +540,57 @@ def admin_page():
 
     with tab4:
         st.header("🗂 Manage Files")
-        search_term = st.text_input("Search rooms by name", key="manage_search").lower()
+        search_term = st.text_input("Search rooms by name", key="manage_search_input").lower()
         
-        # Get all rooms
         all_rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
         filtered_rooms = [room for room in all_rooms if search_term in room.lower()]
         
         if not filtered_rooms:
             st.info("No rooms found matching your search")
             return
-        
-        for room in filtered_rooms:
-            with st.expander(f"Room: **{room}**", expanded=False):
-                # Add subfolder selection
-                subfolders = get_subfolders(room)
-                selected_sub = st.selectbox(
-                    "Select Location",
-                    ["Main Area"] + subfolders,
-                    key=f"sub_manage_{room}"
-                )
-                
-                # Determine the path based on selection
-                path = f"{BASE_PATH}/{room}"
-                if selected_sub != "Main Area":
-                    path += f"/{selected_sub}"
-                
-                # File management section
-                files = get_github_files(path)
-                files = [f for f in files 
-                        if f['type'] == 'file' 
-                        and f['name'] not in ['info.txt', 'thumbnail.jpg']]
+    
+        for room_idx, room in enumerate(filtered_rooms):
+            with st.expander(f"Room: **{room}**", expanded=False, key=f"room_exp_{room_idx}"):
+                files = get_github_files(f"{BASE_PATH}/{room}")
+                files = [f for f in files if f['type'] == 'file' and f['name'] != 'info.txt']
                 
                 if not files:
-                    st.info("No files to manage in this section")
+                    st.info("No files to manage in this room")
                 else:
-                    st.subheader(f"Files in {selected_sub}")
+                    st.subheader(f"Files in {room}")
                     
-                    for file in files:
+                    for file_idx, file in enumerate(files):
+                        unique_key = f"{room}_{file['name']}_{file_idx}"
                         col1, col2, col3, col4 = st.columns([2, 3, 2, 2])
                         
-                        # Column 1: Preview
                         with col1:
                             file_ext = file['name'].split('.')[-1].lower()
                             if file_ext in ['jpg', 'jpeg', 'png', 'gif']:
                                 st.image(file['download_url'], width=100)
-                            elif file_ext == 'mp4':
+                            elif file_ext in ['mp4']:
                                 st.video(file['download_url'])
                             else:
                                 st.markdown(f"📄 `{file['name']}`")
                         
-                        # Column 2: File Info
                         with col2:
-                            st.markdown(f"**File Name:** `{file['name']}`")
-                            st.caption(f"Path: {file['path']}")
+                            st.markdown(f"**File:** `{file['name']}`")
                         
-                        # Column 3: Rename
                         with col3:
                             new_name = st.text_input(
                                 "New name",
                                 value=file['name'],
-                                key=f"rename_{file['sha']}"
+                                key=f"rename_{unique_key}"
                             )
                         
-                        # Column 4: Actions
                         with col4:
-                            # Delete button
-                            if st.button("🗑️ Delete", key=f"del_{file['sha']}"):
+                            if st.button("🗑️ Delete", key=f"del_{unique_key}"):
                                 if delete_file(file['path'], file['sha']):
                                     st.success("File deleted!")
                                     st.rerun()
                                 else:
-                                    st.error("Delete failed")
+                                    st.error("Failed to delete file")
                             
-                            # Rename button
-                            if st.button("✏️ Rename", key=f"ren_{file['sha']}"):
+                            if st.button("✏️ Rename", key=f"ren_{unique_key}"):
                                 if new_name.strip() == file['name']:
                                     st.warning("Name unchanged")
                                 elif not new_name.strip():
@@ -627,16 +600,11 @@ def admin_page():
                                         st.success("File renamed!")
                                         st.rerun()
                                     else:
-                                        st.error("Rename failed")
-                    
-                    # Carousel preview
-                    st.markdown("---")
-                    st.subheader("Content Preview")
-                    display_carousel(files)
+                                        st.error("Failed to rename file")
 
-
+    # Delete Rooms Tab (Tab5)
     with tab5:
-        st.header("🚮 Delete/Rename Rooms")
+        st.header("🚮 Delete Rooms")
         search_term = st.text_input("Search rooms by name", key="delete_search_input").lower()
         
         all_rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
@@ -645,26 +613,24 @@ def admin_page():
         if not filtered_rooms:
             st.info("No rooms found matching your search")
             return
-
-        for idx, room in enumerate(filtered_rooms):
-            with st.expander(f"Room: **{room}**", expanded=False, key=f"room_exp_{idx}"):
+    
+        for room_idx, room in enumerate(filtered_rooms):
+            with st.expander(f"Room: **{room}**", expanded=False, key=f"del_exp_{room_idx}"):
                 col1, col2 = st.columns([4, 2])
                 with col1:
                     new_name = st.text_input(
                         "New room name",
                         value=room,
-                        key=f"rename_input_{room}_{idx}"
+                        key=f"rename_input_{room_idx}"
                     )
-                    if st.button("✏️ Rename Room", key=f"ren_btn_{room}_{idx}"):
-                        st.error("Rename functionality currently disabled")
-                
                 with col2:
-                    if st.button("🗑️ Delete Room", key=f"del_btn_{room}_{idx}"):
+                    if st.button("🗑️ Delete Room", key=f"del_btn_{room_idx}"):
                         if delete_room(room):
                             st.success("Room deleted!")
                             st.rerun()
                         else:
                             st.error("Delete failed")
+
 
 
 
