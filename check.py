@@ -421,6 +421,95 @@ def display_subfolder_content(room, subfolder):
         st.info("No media files available for this access point")
 
 
+def rename_file(old_path, new_name):
+    """Rename a file in the GitHub repository"""
+    try:
+        # Validate inputs
+        if not old_path or not new_name:
+            st.error("Invalid file paths provided")
+            return False
+
+        # Get file details from GitHub
+        file_url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{old_path}"
+        response = requests.get(file_url, headers=HEADERS)
+        
+        if response.status_code != 200:
+            st.error(f"Failed to fetch file details (HTTP {response.status_code})")
+            return False
+
+        file_data = response.json()
+        
+        # Validate required fields
+        required_keys = ['sha', 'content', 'download_url', 'path']
+        if not all(key in file_data for key in required_keys):
+            st.error("Missing required file metadata from GitHub")
+            return False
+
+        # Get file content
+        file_content = file_data['content']
+        if not file_content:
+            # Fallback to direct download
+            download_response = requests.get(file_data['download_url'])
+            if download_response.status_code == 200:
+                file_content = base64.b64encode(download_response.content).decode()
+            else:
+                st.error("Failed to retrieve file content")
+                return False
+
+        # Construct new path
+        new_path = str(Path(old_path).parent / new_name)
+        
+        # Check if new path already exists
+        existing_files = get_github_files(str(Path(new_path).parent))
+        if any(f['name'] == new_name for f in existing_files):
+            st.error("A file with this name already exists")
+            return False
+
+        # Create new file
+        create_response = requests.put(
+            f"https://api.github.com/repos/{GITHUB_REPO}/contents/{new_path}",
+            headers=HEADERS,
+            json={
+                "message": f"Rename {Path(old_path).name} to {new_name}",
+                "content": file_content,
+                "branch": "main"
+            }
+        )
+
+        if create_response.status_code not in [200, 201]:
+            st.error(f"Failed to create new file (HTTP {create_response.status_code})")
+            return False
+
+        # Delete old file
+        delete_response = requests.delete(
+            f"https://api.github.com/repos/{GITHUB_REPO}/contents/{old_path}",
+            headers=HEADERS,
+            json={
+                "message": f"Delete original file after rename",
+                "sha": file_data['sha'],
+                "branch": "main"
+            }
+        )
+
+        if delete_response.status_code != 200:
+            # Rollback creation
+            requests.delete(
+                f"https://api.github.com/repos/{GITHUB_REPO}/contents/{new_path}",
+                headers=HEADERS,
+                json={
+                    "message": "Rollback failed rename",
+                    "sha": create_response.json()['content']['sha']
+                }
+            )
+            st.error("Failed to complete rename operation - rolled back changes")
+            return False
+
+        return True
+
+    except Exception as e:
+        st.error(f"Error during renaming: {str(e)}")
+        return False
+
 
 
 
