@@ -272,8 +272,7 @@ def display_carousel(files, zoom=False):
     <style>
         .swiper {{
             width: 100%;
-            height: 500px;
-            margin: 20px 0;
+            height: auto;
         }}
         .swiper-slide {{
             text-align: center;
@@ -281,20 +280,30 @@ def display_carousel(files, zoom=False):
             justify-content: center;
             align-items: center;
         }}
-        .swiper-button-next,
-        .swiper-button-prev {{
-            color: #666;
-            background: rgba(255,255,255,0.8);
-            padding: 20px;
-            border-radius: 50%;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        .swiper-slide img, .swiper-slide video {{
+            max-height: 400px;
+            width: 100%;
+            border-radius: 10px;
+            box-shadow: 0px 5px 15px rgba(0,0,0,0.2);
+            object-fit: contain;
         }}
         .swiper-pagination-fraction {{
-            color: #fff;
-            background: rgba(0,0,0,0.5);
-            padding: 5px 15px;
-            border-radius: 10px;
-            font-size: 14px;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }}
+        .swiper-button-next,
+        .swiper-button-prev {{
+            width: 30px;
+            height: 30px;
+            background-color: rgba(0, 0, 0, 0.4);
+            border-radius: 50%;
+        }}
+        .swiper-button-next:after,
+        .swiper-button-prev:after {{
+            font-size: 20px;
+            color: white;
         }}
         .swiper-zoom-container {{
             cursor: zoom-in;
@@ -302,9 +311,14 @@ def display_carousel(files, zoom=False):
         .swiper-slide-zoomed .swiper-zoom-container {{
             cursor: move;
         }}
+        @media screen and (max-width: 600px) {{
+            .swiper-slide img, .swiper-slide video {{
+                max-height: 300px;
+            }}
+        }}
     </style>
     
-    <div class="swiper myCarousel">
+    <div class="swiper mySwiper">
         <div class="swiper-wrapper">
             {carousel_items}
         </div>
@@ -315,7 +329,7 @@ def display_carousel(files, zoom=False):
     
     <script src="https://unpkg.com/swiper@8/swiper-bundle.min.js"></script>
     <script>
-        const swiper = new Swiper('.myCarousel', {{
+        const swiper = new Swiper('.mySwiper', {{
             loop: true,
             zoom: {'true' if zoom else 'false'},
             pagination: {{
@@ -329,7 +343,7 @@ def display_carousel(files, zoom=False):
         }});
     </script>
     """
-    components.html(carousel_html, height=550)
+    components.html(carousel_html, height=500)
 
 
 
