@@ -572,7 +572,7 @@ def update_subfolder_thumbnail(room_name, subfolder_name, new_thumbnail):
 # Admin Page
 def admin_page():
     st.title("Admin Panel")
-    tab1, tab2, tab3, tab4, tab5 , tab6= st.tabs(["Create Room", "Add Content", "Manage Subfolders", "Manage Files", "🚮 Delete Rooms,"📷 Change Subfolder Thumbnail"])
+    tab1, tab2, tab3, tab4, tab5 , tab6= st.tabs(["Create Room", "Add Content", "Manage Subfolders", "Manage Files", "🚮 Delete Rooms","📷 Change Subfolder Thumbnail"])
 
 
     # Create Room Tab (Tab1)
