@@ -100,15 +100,56 @@ def update_subfolder_info(room_name, subfolder, content):
     )
     return response.status_code == 200
 
-def delete_subfolder(room_name, subfolder):
-    path = f"{BASE_PATH}/{room_name}/{subfolder}"
-    contents = get_github_files(path)
-    success = True
-    for item in contents:
-        if not delete_file(item['path'], item['sha']):
-            success = False
-    return success
+def delete_room(room_name):
+    """Delete a room and all its contents including subfolders"""
+    try:
+        # Get all contents of the room (files + subfolders)
+        contents = get_github_files(f"{BASE_PATH}/{room_name}")
+        success = True
+        
+        for item in contents:
+            if item['type'] == 'file':
+                # Delete files directly
+                if not delete_file(item['path'], item['sha']):
+                    success = False
+            elif item['type'] == 'dir':
+                # Recursively delete subfolder contents
+                subfolder_path = f"{BASE_PATH}/{room_name}/{item['name']}"
+                if not delete_subfolder(subfolder_path):
+                    success = False
+        
+        # Finally delete the room folder itself
+        room_path = f"{BASE_PATH}/{room_name}"
+        if success:
+            # GitHub automatically deletes empty directories
+            return True
+        return False
 
+    except Exception as e:
+        st.error(f"Error deleting room: {str(e)}")
+        return False
+
+def delete_subfolder(subfolder_path):
+    """Delete a subfolder and its contents"""
+    try:
+        contents = get_github_files(subfolder_path)
+        success = True
+        
+        for item in contents:
+            if item['type'] == 'file':
+                if not delete_file(item['path'], item['sha']):
+                    success = False
+            elif item['type'] == 'dir':
+                # Handle nested subfolders
+                if not delete_subfolder(f"{subfolder_path}/{item['name']}"):
+                    success = False
+        
+        return success
+
+    except Exception as e:
+        st.error(f"Error deleting subfolder: {str(e)}")
+        return False
+        
 def get_next_file_number(room_name, subfolder=None):
     path = f"{BASE_PATH}/{room_name}" + (f"/{subfolder}" if subfolder else "")
     files = get_github_files(path)
