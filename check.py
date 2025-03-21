@@ -208,23 +208,14 @@ def display_main_content(room_name):
     
     # Show thumbnail and info in row
     if main_media:
-
-        with st.container():
-            col1, col2 = st.columns([2, 3])
-            
-            with col1:
-                first_file = main_media[0]
-                if first_file['name'].split('.')[-1].lower() in ['jpg', 'jpeg', 'png']:
-                    st.image(first_file['download_url'], use_container_width=True)
-        
-            with col2:
-                st.markdown("**Main Area**")
-                st.markdown(info_content)
-
-
-    
-        
-        
+        col1, col2 = st.columns([2, 3])
+        with col1:
+            first_file = main_media[0]
+            if first_file['name'].split('.')[-1].lower() in ['jpg', 'jpeg', 'png']:
+                st.image(first_file['download_url'], width=200)  # Fixed width instead of use_column_width
+        with col2:
+            st.markdown(f"**Main Area**")
+            st.markdown(info_content)
         
         # Main Area Carousel
         display_carousel(main_media, zoom=True)
@@ -242,7 +233,7 @@ def display_main_content(room_name):
         col1, col2 = st.columns([2, 3])
         with col1:
             thumbnail_url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/main/{sub_path}/thumbnail.jpg"
-            st.image(thumbnail_url, use_column_width=True)
+            st.image(thumbnail_url, width=200)  # Fixed width instead of use_column_width
         with col2:
             sub_info = get_subfolder_info(room_name, sub)
             st.markdown(sub_info)
@@ -710,6 +701,7 @@ def admin_page():
 
 
 
+Copy
 def default_page():
     st.markdown("""
     <h1>🔍 Room <span style="color: green;font-size: 15px;">[MITM]</span></h1>
