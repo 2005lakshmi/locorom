@@ -715,17 +715,29 @@ def default_page():
     st.subheader(f"Room: {selected_room}")
     
     subfolders = get_subfolders(selected_room)
-    if subfolders:
-        st.markdown("### Choose your approximate location")
-        cols = st.columns(4)
-        for idx, sub in enumerate(subfolders):
-            with cols[idx % 4]:
-                thumbnail_url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/main/{BASE_PATH}/{selected_room}/{sub}/thumbnail.jpg"
-                st.image(thumbnail_url, use_column_width=True)
-                if st.button(sub):
-                    display_subfolder_content(selected_room, sub)
-    else:
-        display_main_content(selected_room)
+
+
+
+    display_main_content(selected_room)  #me
+
+
+    
+    for e in subfolders:    #me
+
+
+
+    
+        if subfolders:
+            st.markdown("### Choose your approximate location")
+            cols = st.columns(4)
+            for idx, sub in enumerate(subfolders):
+                with cols[idx % 4]:
+                    thumbnail_url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/main/{BASE_PATH}/{selected_room}/{sub}/thumbnail.jpg"
+                    st.image(thumbnail_url, use_column_width=True)
+                    if st.button(sub):
+                        display_subfolder_content(selected_room, sub)
+#    else:
+#        display_main_content(selected_room)
         
 
 # Main app execution
