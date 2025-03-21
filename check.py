@@ -208,26 +208,23 @@ def display_main_content(room_name):
     
     # Show thumbnail and info in row
     if main_media:
+
         with st.container():
             col1, col2 = st.columns([2, 3])
             
             with col1:
                 first_file = main_media[0]
                 if first_file['name'].split('.')[-1].lower() in ['jpg', 'jpeg', 'png']:
-                    st.image(first_file['download_url'], use_column_width=True)
+                    st.image(first_file['download_url'], use_container_width=True)
         
             with col2:
                 st.markdown("**Main Area**")
                 st.markdown(info_content)
+
+
+    
         
-        '''col1, col2 = st.columns([2, 3])
-        with col1:
-            first_file = main_media[0]
-            if first_file['name'].split('.')[-1].lower() in ['jpg', 'jpeg', 'png']:
-                st.image(first_file['download_url'], use_column_width=True)
-        with col2:
-            st.markdown(f"**Main Area**")
-            st.markdown(info_content)'''
+        
         
         # Main Area Carousel
         display_carousel(main_media, zoom=True)
