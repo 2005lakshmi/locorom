@@ -535,13 +535,44 @@ def rename_file(old_path, new_name):
         st.error(f"Error during renaming: {str(e)}")
         return False
 
+def update_subfolder_thumbnail(room_name, subfolder_name, new_thumbnail):
+    """Replace existing thumbnail in a subfolder"""
+    try:
+        # Define thumbnail path
+        thumbnail_path = f"{BASE_PATH}/{room_name}/{subfolder_name}/thumbnail.jpg"
+        
+        # Delete existing thumbnail if exists
+        existing_thumb = get_github_files(f"{BASE_PATH}/{room_name}/{subfolder_name}")
+        for item in existing_thumb:
+            if item['name'].lower() == "thumbnail.jpg":
+                if not delete_file(item['path'], item['sha']):
+                    return False
+        
+        # Upload new thumbnail
+        content = base64.b64encode(new_thumbnail.read()).decode()
+        data = {
+            "message": f"Update thumbnail for {subfolder_name}",
+            "content": content
+        }
+        response = requests.put(
+            f"https://api.github.com/repos/{GITHUB_REPO}/contents/{thumbnail_path}",
+            headers=HEADERS,
+            json=data
+        )
+        
+        return response.status_code == 201
+        
+    except Exception as e:
+        st.error(f"Thumbnail update error: {str(e)}")
+        return False
+
 
 
 
 # Admin Page
 def admin_page():
     st.title("Admin Panel")
-    tab1, tab2, tab3, tab4, tab5= st.tabs(["Create Room", "Add Content", "Manage Subfolders", "Manage Files", "🚮 Delete Rooms"])
+    tab1, tab2, tab3, tab4, tab5 , tab6= st.tabs(["Create Room", "Add Content", "Manage Subfolders", "Manage Files", "🚮 Delete Rooms,"📷 Change Subfolder Thumbnail"])
 
 
     # Create Room Tab (Tab1)
@@ -785,8 +816,53 @@ def admin_page():
                         else:
                             st.error("Failed to delete room")
     
-    
-
+        
+    with tab6:
+        st.header("📷 Change Subfolder Thumbnail")
+        
+        # Room selection
+        rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
+        selected_room = st.selectbox("Select Room", rooms, key="thumb_room_select")
+        
+        if selected_room:
+            # Subfolder selection with thumbnail preview
+            subfolders = get_subfolders(selected_room)
+            if not subfolders:
+                st.info("This room has no subfolders")
+                return
+            
+            # Create columns for dropdown and preview
+            col1, col2 = st.columns([3, 2])
+            
+            with col1:
+                selected_sub = st.selectbox("Select Subfolder", subfolders, key="thumb_sub_select")
+            
+            with col2:
+                # Display current thumbnail
+                thumbnail_url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/main/{BASE_PATH}/{selected_room}/{selected_sub}/thumbnail.jpg"
+                st.image(thumbnail_url, 
+                        width=150,  # Set fixed small size
+                        caption="Current Thumbnail",
+                        use_column_width=False)
+            
+            # Thumbnail upload section
+            new_thumbnail = st.file_uploader("Upload New Thumbnail", 
+                                           type=['jpg', 'jpeg', 'png'], 
+                                           key="thumb_upload")
+            
+            # Preview new thumbnail before upload
+            if new_thumbnail:
+                st.image(new_thumbnail, 
+                        width=150,
+                        caption="New Thumbnail Preview",
+                        use_column_width=False)
+                
+                if st.button("Update Thumbnail", key="thumb_update_btn"):
+                    if update_subfolder_thumbnail(selected_room, selected_sub, new_thumbnail):
+                        st.success("Thumbnail updated successfully!")
+                        st.rerun()
+                    else:
+                        st.error("Failed to update thumbnail")
 
 
 
