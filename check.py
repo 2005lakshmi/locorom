@@ -100,54 +100,38 @@ def update_subfolder_info(room_name, subfolder, content):
     )
     return response.status_code == 200
 
-def delete_room(room_name):
-    """Delete a room and all its contents including subfolders"""
-    try:
-        # Get all contents of the room (files + subfolders)
-        contents = get_github_files(f"{BASE_PATH}/{room_name}")
-        success = True
-        
-        for item in contents:
-            if item['type'] == 'file':
-                # Delete files directly
-                if not delete_file(item['path'], item['sha']):
-                    success = False
-            elif item['type'] == 'dir':
-                # Recursively delete subfolder contents
-                subfolder_path = f"{BASE_PATH}/{room_name}/{item['name']}"
-                if not delete_subfolder(subfolder_path):
-                    success = False
-        
-        # Finally delete the room folder itself
-        room_path = f"{BASE_PATH}/{room_name}"
-        if success:
-            # GitHub automatically deletes empty directories
-            return True
-        return False
-
-    except Exception as e:
-        st.error(f"Error deleting room: {str(e)}")
-        return False
-
 def delete_subfolder(subfolder_path):
-    """Delete a subfolder and its contents"""
+    """Delete a subfolder and its contents recursively"""
     try:
         contents = get_github_files(subfolder_path)
         success = True
-        
         for item in contents:
             if item['type'] == 'file':
                 if not delete_file(item['path'], item['sha']):
                     success = False
             elif item['type'] == 'dir':
-                # Handle nested subfolders
                 if not delete_subfolder(f"{subfolder_path}/{item['name']}"):
                     success = False
-        
         return success
-
     except Exception as e:
         st.error(f"Error deleting subfolder: {str(e)}")
+        return False
+
+def delete_room(room_name):
+    """Delete a room and all its contents"""
+    try:
+        contents = get_github_files(f"{BASE_PATH}/{room_name}")
+        success = True
+        for item in contents:
+            if item['type'] == 'file':
+                if not delete_file(item['path'], item['sha']):
+                    success = False
+            elif item['type'] == 'dir':
+                if not delete_subfolder(f"{BASE_PATH}/{room_name}/{item['name']}"):
+                    success = False
+        return success
+    except Exception as e:
+        st.error(f"Error deleting room: {str(e)}")
         return False
         
 def get_next_file_number(room_name, subfolder=None):
@@ -759,60 +743,47 @@ def admin_page():
                     st.info("No media files available in this location")
                 
     # Delete Rooms Tab (Tab5)
-    with tab5:
-        st.header("🚮 Delete Content")
-        search_term = st.text_input("Search rooms by name", key="delete_search").lower()
-        
-        all_rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
-        filtered_rooms = [room for room in all_rooms if search_term in room.lower()]
-        
-        if not filtered_rooms:
-            st.info("No rooms found matching your search")
-            return
+with tab5:
+    st.header("🚮 Delete Content")
+    search_term = st.text_input("Search rooms by name", key="delete_search").lower()
     
-        for room in filtered_rooms:
-            with st.expander(f"Room: **{room}**", expanded=False):
-                col1, col2 = st.columns([3, 2])
-                
-                with col1:
-                    st.subheader("Delete Subfolder")
-                    subfolders = get_subfolders(room)
-                    
-                    if subfolders:
-                        selected_sub = st.selectbox(
-                            "Select subfolder to delete",
-                            subfolders,
-                            key=f"sub_del_{room}"
-                        )
-                        if st.button(f"🗑️ Delete Subfolder", key=f"sub_del_btn_{room}"):
-                            if delete_subfolder(room, selected_sub):
-                                st.success(f"Subfolder '{selected_sub}' deleted successfully!")
-                                st.rerun()
-                            else:
-                                st.error("Failed to delete subfolder")
-                    else:
-                        st.info("No subfolders in this room")
+    all_rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
+    filtered_rooms = [room for room in all_rooms if search_term in room.lower()]
     
-                with col2:
-                    st.subheader("Delete Entire Room")
-                    if st.button("⚠️ Delete Entire Room", key=f"room_del_{room}"):
-                        if delete_room(room):
-                            st.success("Room deleted successfully!")
+    if not filtered_rooms:
+        st.info("No rooms found matching your search")
+        return
+
+    for room in filtered_rooms:
+        with st.expander(f"Room: **{room}**", expanded=False):
+            col1, col2 = st.columns([3, 2])
+            
+            with col1:
+                st.subheader("Delete Subfolder")
+                subfolders = get_subfolders(room)
+                if subfolders:
+                    selected_sub = st.selectbox(
+                        "Select subfolder to delete",
+                        subfolders,
+                        key=f"sub_del_{room}"
+                    )
+                    if st.button(f"🗑️ Delete Subfolder", key=f"sub_del_btn_{room}"):
+                        if delete_subfolder(f"{BASE_PATH}/{room}/{selected_sub}"):
+                            st.success(f"Subfolder '{selected_sub}' deleted!")
                             st.rerun()
                         else:
-                            st.error("Failed to delete room")
-                    
-                    st.warning("""
-                    **Warning:** Deleting a room will permanently remove:
-                    - All files in the main area
-                    - All subfolders and their contents
-                    - Room information
-                    """)
+                            st.error("Failed to delete subfolder")
+                else:
+                    st.info("No subfolders in this room")
 
-
-
-
-
+            with col2:
+                st.subheader("Delete Entire Room")
+                if st.button("⚠️ Delete Entire Room", key=f"room_del_{room}"):
+                    if delete_room(room):
+                        st.success("Room deleted successfully!")
+                        st.rerun()
+                    else:
+                        st.error("Failed to delete room")
 
 
 
