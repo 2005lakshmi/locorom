@@ -541,7 +541,7 @@ def rename_file(old_path, new_name):
 # Admin Page
 def admin_page():
     st.title("Admin Panel")
-    tab1, tab2, tab3, tab4, tab5= st.tabs(["Create Room", "Add Content", "Manage Subfolders", "Manage Files", "🚮 Delete/Rename Rooms"])
+    tab1, tab2, tab3, tab4, tab5= st.tabs(["Create Room", "Add Content", "Manage Subfolders", "Manage Files", "🚮 Delete Rooms"])
 
 
     # Create Room Tab (Tab1)
@@ -743,49 +743,49 @@ def admin_page():
                     st.info("No media files available in this location")
                 
     # Delete Rooms Tab (Tab5)
-with tab5:
-    st.header("🚮 Delete Content")
-    search_term = st.text_input("Search rooms by name", key="delete_search").lower()
+    with tab5:
+        st.header("🚮 Delete Content")
+        search_term = st.text_input("Search rooms by name", key="delete_search").lower()
+        
+        all_rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
+        filtered_rooms = [room for room in all_rooms if search_term in room.lower()]
+        
+        if not filtered_rooms:
+            st.info("No rooms found matching your search")
+           
     
-    all_rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
-    filtered_rooms = [room for room in all_rooms if search_term in room.lower()]
+        for room in filtered_rooms:
+            with st.expander(f"Room: **{room}**", expanded=False):
+                col1, col2 = st.columns([3, 2])
+                
+                with col1:
+                    st.subheader("Delete Subfolder")
+                    subfolders = get_subfolders(room)
+                    if subfolders:
+                        selected_sub = st.selectbox(
+                            "Select subfolder to delete",
+                            subfolders,
+                            key=f"sub_del_{room}"
+                        )
+                        if st.button(f"🗑️ Delete Subfolder", key=f"sub_del_btn_{room}"):
+                            if delete_subfolder(f"{BASE_PATH}/{room}/{selected_sub}"):
+                                st.success(f"Subfolder '{selected_sub}' deleted!")
+                                st.rerun()
+                            else:
+                                st.error("Failed to delete subfolder")
+                    else:
+                        st.info("No subfolders in this room")
     
-    if not filtered_rooms:
-        st.info("No rooms found matching your search")
-       
-
-    for room in filtered_rooms:
-        with st.expander(f"Room: **{room}**", expanded=False):
-            col1, col2 = st.columns([3, 2])
-            
-            with col1:
-                st.subheader("Delete Subfolder")
-                subfolders = get_subfolders(room)
-                if subfolders:
-                    selected_sub = st.selectbox(
-                        "Select subfolder to delete",
-                        subfolders,
-                        key=f"sub_del_{room}"
-                    )
-                    if st.button(f"🗑️ Delete Subfolder", key=f"sub_del_btn_{room}"):
-                        if delete_subfolder(f"{BASE_PATH}/{room}/{selected_sub}"):
-                            st.success(f"Subfolder '{selected_sub}' deleted!")
+                with col2:
+                    st.subheader("Delete Entire Room")
+                    if st.button("⚠️ Delete Entire Room", key=f"room_del_{room}"):
+                        if delete_room(room):
+                            st.success("Room deleted successfully!")
                             st.rerun()
                         else:
-                            st.error("Failed to delete subfolder")
-                else:
-                    st.info("No subfolders in this room")
-
-            with col2:
-                st.subheader("Delete Entire Room")
-                if st.button("⚠️ Delete Entire Room", key=f"room_del_{room}"):
-                    if delete_room(room):
-                        st.success("Room deleted successfully!")
-                        st.rerun()
-                    else:
-                        st.error("Failed to delete room")
-
-
+                            st.error("Failed to delete room")
+    
+    
 
 
 
