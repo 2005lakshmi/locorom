@@ -200,55 +200,54 @@ def display_main_content(room_name):
     """Display main content for a room with subfolders"""
     # Get room info
     info_content = get_room_info(room_name)
-    st.markdown(f"*Room Info/Location:*\n\n <b>{info_content}</b>", unsafe_allow_html=True)
+    
+    # Main Area Section
+    st.markdown("### From Point:")
+    main_files = get_github_files(f"{BASE_PATH}/{room_name}")
+    main_media = [f for f in main_files if f['name'] != 'info.txt']
+    
+    # Show thumbnail and info in row
+    if main_media:
+        col1, col2 = st.columns([2, 3])
+        with col1:
+            first_file = main_media[0]
+            if first_file['name'].split('.')[-1].lower() in ['jpg', 'jpeg', 'png']:
+                st.image(first_file['download_url'], use_column_width=True)
+        with col2:
+            st.markdown(f"**Main Area**")
+            st.markdown(info_content)
+        
+        # Main Area Carousel
+        display_carousel(main_media, zoom=True)
+    else:
+        st.info("No media available in main area")
 
-    # Get media files in main folder
-    files = get_github_files(f"{BASE_PATH}/{room_name}")
-    media_files = [f for f in files if f['name'] != 'info.txt']
-
-    # Display "From Point" section
-    if media_files:
-        st.markdown("### From Point:")
-        first_image = next((f for f in media_files if f['name'].split('.')[-1].lower() in ['jpg', 'jpeg', 'png']), None)
-        if first_image:
-            col1, col2 = st.columns([2, 3])
-            with col1:
-                st.image(first_image['download_url'], width=150)
-            with col2:
-                st.write("Main Area")
-        else:
-            st.info("No images available in the main area")
-
-        # Display carousel for main area
-        st.markdown("---")
-        st.subheader("Photos from Main Area")
-        display_carousel(media_files)
-
-    # Display subfolders
+    # Subfolders Section
     subfolders = get_subfolders(room_name)
-    if subfolders:
-        for sub in subfolders:
-            st.markdown(f"### From {sub}:")
-            
-            # Display subfolder thumbnail and info
-            thumbnail_url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/main/{BASE_PATH}/{room_name}/{sub}/thumbnail.jpg"
-            col1, col2 = st.columns([2, 3])
-            with col1:
-                st.image(thumbnail_url, width=150)
-            with col2:
-                st.write(get_subfolder_info(room_name, sub))
+    for sub in subfolders:
+        st.markdown(f"### From {sub}:")
+        sub_path = f"{BASE_PATH}/{room_name}/{sub}"
+        sub_files = get_github_files(sub_path)
+        
+        # Subfolder thumbnail and info
+        col1, col2 = st.columns([2, 3])
+        with col1:
+            thumbnail_url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/main/{sub_path}/thumbnail.jpg"
+            st.image(thumbnail_url, use_column_width=True)
+        with col2:
+            sub_info = get_subfolder_info(room_name, sub)
+            st.markdown(sub_info)
+        
+        # Subfolder media carousel
+        sub_media = [f for f in sub_files if f['name'] not in ['info.txt', 'thumbnail.jpg']]
+        if sub_media:
+            display_carousel(sub_media, zoom=True)
+        else:
+            st.info(f"No media available in {sub}")
 
-            # Show photos button
-            if st.button(f"Show Photos from {sub}", key=f"show_{sub}"):
-                sub_files = get_github_files(f"{BASE_PATH}/{room_name}/{sub}")
-                sub_media_files = [f for f in sub_files if f['name'] != 'info.txt']
-                if sub_media_files:
-                    display_carousel(sub_media_files)
-                else:
-                    st.info(f"No photos available in {sub}")
 
-def display_carousel(files):
-    """Display media files in a carousel with custom navigation"""
+def display_carousel(files, zoom=False):
+    """Display media files in a carousel with zoom capability"""
     carousel_items = ""
     for file in files:
         ext = file['name'].split('.')[-1].lower()
@@ -259,7 +258,13 @@ def display_carousel(files):
                 </video>
             """
         else:
-            media_html = f'<img src="{file["download_url"]}" style="max-height: 400px; width: 100%; object-fit: contain;">'
+            zoom_class = "swiper-zoom-container" if zoom else ""
+            media_html = f'''
+            <div class="{zoom_class}">
+                <img src="{file['download_url']}" 
+                     style="max-height: 400px; width: 100%; object-fit: contain;">
+            </div>
+            '''
         carousel_items += f'<div class="swiper-slide">{media_html}</div>'
 
     carousel_html = f"""
@@ -267,61 +272,35 @@ def display_carousel(files):
     <style>
         .swiper {{
             width: 100%;
-            height: 100%;
-            position: relative;
-            padding: 20px 0 40px 0;
+            height: 500px;
+            margin: 20px 0;
         }}
-        
         .swiper-slide {{
             text-align: center;
             display: flex;
             justify-content: center;
             align-items: center;
         }}
-        
         .swiper-button-next,
         .swiper-button-prev {{
-            width: 40px;
-            height: 40px;
-            background-color: rgba(50, 50, 50, 0.7);
+            color: #666;
+            background: rgba(255,255,255,0.8);
+            padding: 20px;
             border-radius: 50%;
-            backdrop-filter: blur(2px);
-            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }}
-        
-        .swiper-button-next:hover,
-        .swiper-button-prev:hover {{
-            background-color: rgba(30, 30, 30, 0.9);
-            transform: scale(1.1);
-        }}
-        
-        .swiper-button-next:after,
-        .swiper-button-prev:after {{
-            color: white;
-            font-size: 24px;
-            font-weight: bold;
-        }}
-        
         .swiper-pagination-fraction {{
-            color: white;
-            font-size: 16px;
-            font-weight: 500;
-            background: rgba(0, 0, 0, 0.3);
-            padding: 2px 10px;
+            color: #fff;
+            background: rgba(0,0,0,0.5);
+            padding: 5px 15px;
             border-radius: 10px;
-            width: auto;
-            left: 50%;
-            transform: translateX(-50%);
-            bottom: 10px !important;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            font-size: 14px;
         }}
-        
-        .swiper-pagination-current {{
-            color: #f8f8f8;
+        .swiper-zoom-container {{
+            cursor: zoom-in;
         }}
-        
-        .swiper-pagination-total {{
-            color: #cccccc;
+        .swiper-slide-zoomed .swiper-zoom-container {{
+            cursor: move;
         }}
     </style>
     
@@ -329,43 +308,29 @@ def display_carousel(files):
         <div class="swiper-wrapper">
             {carousel_items}
         </div>
-        <!-- Navigation buttons -->
+        <div class="swiper-pagination"></div>
         <div class="swiper-button-next"></div>
         <div class="swiper-button-prev"></div>
-        <!-- Pagination -->
-        <div class="swiper-pagination"></div>
     </div>
     
     <script src="https://unpkg.com/swiper@8/swiper-bundle.min.js"></script>
     <script>
         const swiper = new Swiper('.myCarousel', {{
             loop: true,
-            centeredSlides: true,
-            slidesPerView: 'auto',
-            spaceBetween: 10,
+            zoom: {'true' if zoom else 'false'},
+            pagination: {{
+                el: '.swiper-pagination',
+                type: 'fraction',
+            }},
             navigation: {{
                 nextEl: '.swiper-button-next',
                 prevEl: '.swiper-button-prev',
             }},
-            pagination: {{
-                el: '.swiper-pagination',
-                type: 'fraction',
-                formatFractionCurrent: function(number) {{
-                    return ('0' + number).slice(-2);
-                }},
-                formatFractionTotal: function(number) {{
-                    return ('0' + number).slice(-2);
-                }}
-            }},
-            breakpoints: {{
-                640: {{ slidesPerView: 1 }},
-                768: {{ slidesPerView: 2 }},
-                1024: {{ slidesPerView: 3 }}
-            }}
         }});
     </script>
     """
-    components.html(carousel_html, height=500)
+    components.html(carousel_html, height=550)
+
 
 
 def display_subfolder_content(room_name, subfolder):
@@ -739,19 +704,22 @@ def admin_page():
 
 
 
-# Default Page
+
 def default_page():
     st.markdown("""
     <h1>🔍 Room <span style="color: green;font-size: 15px;">[MITM]</span></h1>
     """, unsafe_allow_html=True)
 
+    # Search for rooms
     search_term = st.text_input("**Search Room**", "", placeholder="example., 415B").strip().lower()
     
+    # Check for admin password
     if search_term == st.secrets["general"]["password"]:
         st.session_state.page = "Admin Page"
-        st.rerun()
+        st.experimental_rerun()
         return
 
+    # Get filtered rooms
     rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
     filtered_rooms = [room for room in rooms if search_term in room.lower()]
 
@@ -759,33 +727,12 @@ def default_page():
         st.error("No rooms found" if search_term else "Please enter room number to search..!")
         return
 
+    # Select room
     selected_room = st.radio("Select Room", filtered_rooms)
     st.subheader(f"Room: {selected_room}")
-    
-    subfolders = get_subfolders(selected_room)
 
-
-
-    display_main_content(selected_room)  #me
-
-
-    
-    for e in subfolders:    #me
-
-
-
-    
-        if subfolders:
-            st.markdown("### Choose your approximate location")
-            cols = st.columns(4)
-            for idx, sub in enumerate(subfolders):
-                with cols[idx % 4]:
-                    thumbnail_url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/main/{BASE_PATH}/{selected_room}/{sub}/thumbnail.jpg"
-                    st.image(thumbnail_url, use_column_width=True)
-                    if st.button(sub):
-                        display_subfolder_content(selected_room, sub)
-#    else:
-#        display_main_content(selected_room)
+    # Display main content
+    display_main_content(selected_room)
         
 
 # Main app execution
