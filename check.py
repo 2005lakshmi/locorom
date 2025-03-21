@@ -538,10 +538,11 @@ def admin_page():
 
 
 
-    with tab4:  # Manage Files tab
+    with tab4:
         st.header("🗂 Manage Files")
         search_term = st.text_input("Search rooms by name", key="manage_search").lower()
         
+        # Get all rooms
         all_rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
         filtered_rooms = [room for room in all_rooms if search_term in room.lower()]
         
@@ -549,24 +550,34 @@ def admin_page():
             st.info("No rooms found matching your search")
             return
     
-        for room_idx, room in enumerate(filtered_rooms):
-            # Remove 'key' parameter from expander
+        for room in filtered_rooms:
             with st.expander(f"Room: **{room}**", expanded=False):
-                # Rest of your code remains the same
-                files = get_github_files(f"{BASE_PATH}/{room}")
-                files = [f for f in files if f['type'] == 'file' and f['name'] != 'info.txt']
+                # Add subfolder selection
+                subfolders = get_subfolders(room)
+                selected_sub = st.selectbox(
+                    "Select Location",
+                    ["Main Area"] + subfolders,
+                    key=f"sub_select_{room}"
+                )
+                
+                # Determine the path
+                path = f"{BASE_PATH}/{room}"
+                if selected_sub != "Main Area":
+                    path += f"/{selected_sub}"
+                
+                # File management section
+                files = get_github_files(path)
+                files = [f for f in files if f['type'] == 'file' and f['name'] not in ['info.txt', 'thumbnail.jpg']]
                 
                 if not files:
-                    st.info("No files to manage in this room")
+                    st.info("No files to manage in this location")
                 else:
-                    st.subheader(f"Files in {room}")
+                    st.subheader(f"Files in {selected_sub}")
                     
-                    for file_idx, file in enumerate(files):
-                        unique_key = f"{room}_{file['name']}_{file_idx}"
-                        
+                    for file in files:
                         col1, col2, col3, col4 = st.columns([2, 3, 2, 2])
-                        
                         with col1:
+                            # File preview
                             file_ext = file['name'].split('.')[-1].lower()
                             if file_ext in ['jpg', 'jpeg', 'png', 'gif']:
                                 st.image(file['download_url'], width=100)
@@ -579,21 +590,24 @@ def admin_page():
                             st.markdown(f"**File:** `{file['name']}`")
                         
                         with col3:
+                            # Rename functionality
                             new_name = st.text_input(
                                 "New name",
                                 value=file['name'],
-                                key=f"rename_{unique_key}"
+                                key=f"rename_{room}_{file['name']}"
                             )
                         
                         with col4:
-                            if st.button("🗑️ Delete", key=f"del_{unique_key}"):
+                            # Delete button
+                            if st.button("🗑️ Delete", key=f"del_{room}_{file['name']}"):
                                 if delete_file(file['path'], file['sha']):
                                     st.success("File deleted!")
                                     st.rerun()
                                 else:
                                     st.error("Failed to delete file")
                             
-                            if st.button("✏️ Rename", key=f"ren_{unique_key}"):
+                            # Rename button
+                            if st.button("✏️ Rename", key=f"ren_{room}_{file['name']}"):
                                 if new_name.strip() == file['name']:
                                     st.warning("Name unchanged")
                                 elif not new_name.strip():
@@ -604,7 +618,15 @@ def admin_page():
                                         st.rerun()
                                     else:
                                         st.error("Failed to rename file")
-
+    
+                # Carousel preview
+                st.markdown("---")
+                st.subheader("Current Media Preview")
+                if files:
+                    display_carousel(files)
+                else:
+                    st.info("No media files available in this location")
+                
     # Delete Rooms Tab (Tab5)
     with tab5:  # Delete Rooms tab
         st.header("🚮 Delete/Rename Rooms")
