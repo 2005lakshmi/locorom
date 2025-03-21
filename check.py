@@ -431,11 +431,8 @@ def admin_page():
 
     with tab1:
         with st.form(key="create_room_form"):
-            room_name = st.text_input("Room Name", key="create_room_name_input")
-            submit_button = st.form_submit_button("Create Room", 
-                                                help="Click to create new room",
-                                                type="primary",
-                                                key="create_room_submit_btn")
+            room_name = st.text_input("Room Name")
+            submit_button = st.form_submit_button("Create Room")
             
             if submit_button:
                 existing_rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
@@ -449,6 +446,7 @@ def admin_page():
                         st.rerun()
                     else:
                         st.error("Failed to create room")
+
 
                         
     if 'upload_counter' not in st.session_state:
