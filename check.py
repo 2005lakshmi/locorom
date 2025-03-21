@@ -426,14 +426,14 @@ def display_subfolder_content(room, subfolder):
 # Admin Page
 def admin_page():
     st.title("Admin Panel")
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["Create Room", "Add Content", "Manage Subfolders", "Manage Files", "Delete Rooms","✏️ Rename Main Areas"])
+    tab1, tab2, tab3, tab4, tab5= st.tabs(["Create Room", "Add Content", "Manage Subfolders", "Manage Files", "🚮 Delete/Rename Rooms"])
 
 
     
     with tab1:
-        with st.form("create_room"):
-            room_name = st.text_input("Room Name")
-            if st.form_submit_button("Create Room"):
+        with st.form(key="create_room_form"):
+            room_name = st.text_input("Room Name", key="create_room_name_input")
+            if st.form_submit_button("Create Room", key="create_room_submit"):
                 existing_rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
                 if room_name in existing_rooms:
                     st.error("Room already exists")
@@ -442,7 +442,7 @@ def admin_page():
                         st.success(f"Room **{room_name}** created successfully!")
                     else:
                         st.error("Failed to create room")
-
+                        
     if 'upload_counter' not in st.session_state:
         st.session_state.upload_counter = 0
     
@@ -630,8 +630,8 @@ def admin_page():
 
 
     with tab5:
-        st.header("🚮 Delete Content")
-        search_term = st.text_input("Search rooms by name", key="delete_search").lower()
+        st.header("🚮 Delete/Rename Rooms")
+        search_term = st.text_input("Search rooms by name", key="delete_search_input").lower()
         
         all_rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
         filtered_rooms = [room for room in all_rooms if search_term in room.lower()]
@@ -639,59 +639,27 @@ def admin_page():
         if not filtered_rooms:
             st.info("No rooms found matching your search")
             return
-        
-        for room in filtered_rooms:
-            with st.expander(f"Room: **{room}**", expanded=False):
-                col1, col2 = st.columns([3, 2])
-                
+
+        for idx, room in enumerate(filtered_rooms):
+            with st.expander(f"Room: **{room}**", expanded=False, key=f"room_exp_{idx}"):
+                col1, col2 = st.columns([4, 2])
                 with col1:
-                    st.subheader("Delete Entire Room")
-                    if st.button("⚠️ Delete Room", key=f"del_room_{room}"):
+                    new_name = st.text_input(
+                        "New room name",
+                        value=room,
+                        key=f"rename_input_{room}_{idx}"
+                    )
+                    if st.button("✏️ Rename Room", key=f"ren_btn_{room}_{idx}"):
+                        st.error("Rename functionality currently disabled")
+                
+                with col2:
+                    if st.button("🗑️ Delete Room", key=f"del_btn_{room}_{idx}"):
                         if delete_room(room):
                             st.success("Room deleted!")
                             st.rerun()
                         else:
                             st.error("Delete failed")
-                
-                with col2:
-                    st.subheader("Delete Subfolder")
-                    subfolders = get_subfolders(room)
-                    if subfolders:
-                        selected_sub = st.selectbox(
-                            "Select subfolder",
-                            subfolders,
-                            key=f"sub_del_{room}"
-                        )
-                        if st.button("🗑️ Delete Subfolder", key=f"del_sub_{room}"):
-                            if delete_subfolder(room, selected_sub):
-                                st.success("Subfolder deleted!")
-                                st.rerun()
-                            else:
-                                st.error("Delete failed")
-                    else:
-                        st.info("No subfolders in this room")                
-                    
 
-    with tab6:
-        st.header("✏️ Rename Main Areas")
-        search_term = st.text_input("Search rooms to rename", key="rename_search").lower()
-        
-        all_rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
-        filtered_rooms = [room for room in all_rooms if search_term in room.lower()]
-        
-        if not filtered_rooms:
-            st.info("No rooms found matching your search")
-            return
-        
-        for room in filtered_rooms:
-            with st.expander(f"Renaming: {room}", expanded=False):
-                new_name = st.text_input("New room name", value=room, key=f"new_name_{room}")
-                if st.button("Confirm Rename", key=f"confirm_rename_{room}"):
-                    if rename_room(room, new_name):
-                        st.success("Room renamed successfully!")
-                        st.rerun()
-                    else:
-                        st.error("Failed to rename room")
 
 
 
