@@ -538,9 +538,9 @@ def admin_page():
 
 
 
-    with tab4:
+    with tab4:  # Manage Files tab
         st.header("🗂 Manage Files")
-        search_term = st.text_input("Search rooms by name", key="manage_search_input").lower()
+        search_term = st.text_input("Search rooms by name", key="manage_search").lower()
         
         all_rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
         filtered_rooms = [room for room in all_rooms if search_term in room.lower()]
@@ -550,7 +550,9 @@ def admin_page():
             return
     
         for room_idx, room in enumerate(filtered_rooms):
-            with st.expander(f"Room: **{room}**", expanded=False, key=f"room_exp_{room_idx}"):
+            # Remove 'key' parameter from expander
+            with st.expander(f"Room: **{room}**", expanded=False):
+                # Rest of your code remains the same
                 files = get_github_files(f"{BASE_PATH}/{room}")
                 files = [f for f in files if f['type'] == 'file' and f['name'] != 'info.txt']
                 
@@ -561,6 +563,7 @@ def admin_page():
                     
                     for file_idx, file in enumerate(files):
                         unique_key = f"{room}_{file['name']}_{file_idx}"
+                        
                         col1, col2, col3, col4 = st.columns([2, 3, 2, 2])
                         
                         with col1:
@@ -603,9 +606,9 @@ def admin_page():
                                         st.error("Failed to rename file")
 
     # Delete Rooms Tab (Tab5)
-    with tab5:
-        st.header("🚮 Delete Rooms")
-        search_term = st.text_input("Search rooms by name", key="delete_search_input").lower()
+    with tab5:  # Delete Rooms tab
+        st.header("🚮 Delete/Rename Rooms")
+        search_term = st.text_input("Search rooms by name", key="delete_search").lower()
         
         all_rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
         filtered_rooms = [room for room in all_rooms if search_term in room.lower()]
@@ -615,7 +618,8 @@ def admin_page():
             return
     
         for room_idx, room in enumerate(filtered_rooms):
-            with st.expander(f"Room: **{room}**", expanded=False, key=f"del_exp_{room_idx}"):
+            # Remove 'key' parameter from expander
+            with st.expander(f"Room: **{room}**", expanded=False):
                 col1, col2 = st.columns([4, 2])
                 with col1:
                     new_name = st.text_input(
