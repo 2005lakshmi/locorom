@@ -701,7 +701,7 @@ def admin_page():
 
 
 
-Copy
+
 def default_page():
     st.markdown("""
     <h1>🔍 Room <span style="color: green;font-size: 15px;">[MITM]</span></h1>
