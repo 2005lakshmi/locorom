@@ -248,7 +248,7 @@ def display_main_content(room_name):
                     st.info(f"No photos available in {sub}")
 
 def display_carousel(files):
-    """Display media files in a carousel"""
+    """Display media files in a carousel with custom navigation"""
     carousel_items = ""
     for file in files:
         ext = file['name'].split('.')[-1].lower()
@@ -263,8 +263,107 @@ def display_carousel(files):
         carousel_items += f'<div class="swiper-slide">{media_html}</div>'
 
     carousel_html = f"""
-    <!-- Swiper carousel implementation -->
-    {carousel_items}
+    <link rel="stylesheet" href="https://unpkg.com/swiper@8/swiper-bundle.min.css">
+    <style>
+        .swiper {{
+            width: 100%;
+            height: 100%;
+            position: relative;
+            padding: 20px 0 40px 0;
+        }}
+        
+        .swiper-slide {{
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }}
+        
+        .swiper-button-next,
+        .swiper-button-prev {{
+            width: 40px;
+            height: 40px;
+            background-color: rgba(50, 50, 50, 0.7);
+            border-radius: 50%;
+            backdrop-filter: blur(2px);
+            transition: all 0.3s ease;
+        }}
+        
+        .swiper-button-next:hover,
+        .swiper-button-prev:hover {{
+            background-color: rgba(30, 30, 30, 0.9);
+            transform: scale(1.1);
+        }}
+        
+        .swiper-button-next:after,
+        .swiper-button-prev:after {{
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+        }}
+        
+        .swiper-pagination-fraction {{
+            color: white;
+            font-size: 16px;
+            font-weight: 500;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 2px 10px;
+            border-radius: 10px;
+            width: auto;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: 10px !important;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }}
+        
+        .swiper-pagination-current {{
+            color: #f8f8f8;
+        }}
+        
+        .swiper-pagination-total {{
+            color: #cccccc;
+        }}
+    </style>
+    
+    <div class="swiper myCarousel">
+        <div class="swiper-wrapper">
+            {carousel_items}
+        </div>
+        <!-- Navigation buttons -->
+        <div class="swiper-button-next"></div>
+        <div class="swiper-button-prev"></div>
+        <!-- Pagination -->
+        <div class="swiper-pagination"></div>
+    </div>
+    
+    <script src="https://unpkg.com/swiper@8/swiper-bundle.min.js"></script>
+    <script>
+        const swiper = new Swiper('.myCarousel', {{
+            loop: true,
+            centeredSlides: true,
+            slidesPerView: 'auto',
+            spaceBetween: 10,
+            navigation: {{
+                nextEl: '.swiper-button-next',
+                prevEl: '.swiper-button-prev',
+            }},
+            pagination: {{
+                el: '.swiper-pagination',
+                type: 'fraction',
+                formatFractionCurrent: function(number) {{
+                    return ('0' + number).slice(-2);
+                }},
+                formatFractionTotal: function(number) {{
+                    return ('0' + number).slice(-2);
+                }}
+            }},
+            breakpoints: {{
+                640: {{ slidesPerView: 1 }},
+                768: {{ slidesPerView: 2 }},
+                1024: {{ slidesPerView: 3 }}
+            }}
+        }});
+    </script>
     """
     components.html(carousel_html, height=500)
 
@@ -343,7 +442,7 @@ def display_subfolder_content(room, subfolder):
 # Admin Page
 def admin_page():
     st.title("Admin Panel")
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(["Create Room", "Add Content", "Manage Subfolders", "Manage Files", "Delete Rooms"])
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["Create Room", "Add Content", "Manage Subfolders", "Manage Files", "Delete Rooms","✏️ Rename Main Areas"])
 
 
     
@@ -453,7 +552,6 @@ def admin_page():
 
 
 
-
     with tab4:
         st.header("🗂 Manage Files")
         search_term = st.text_input("Search rooms by name", key="manage_search").lower()
@@ -465,52 +563,71 @@ def admin_page():
         if not filtered_rooms:
             st.info("No rooms found matching your search")
             return
-    
+        
         for room in filtered_rooms:
             with st.expander(f"Room: **{room}**", expanded=False):
+                # Add subfolder selection
+                subfolders = get_subfolders(room)
+                selected_sub = st.selectbox(
+                    "Select Location",
+                    ["Main Area"] + subfolders,
+                    key=f"sub_manage_{room}"
+                )
+                
+                # Determine the path based on selection
+                path = f"{BASE_PATH}/{room}"
+                if selected_sub != "Main Area":
+                    path += f"/{selected_sub}"
+                
                 # File management section
-                files = get_github_files(f"{BASE_PATH}/{room}")
-                files = [f for f in files if f['type'] == 'file' and f['name'] != 'info.txt']
+                files = get_github_files(path)
+                files = [f for f in files 
+                        if f['type'] == 'file' 
+                        and f['name'] not in ['info.txt', 'thumbnail.jpg']]
                 
                 if not files:
-                    st.info("No files to manage in this room")
+                    st.info("No files to manage in this section")
                 else:
-                    st.subheader(f"Files in {room}")
+                    st.subheader(f"Files in {selected_sub}")
                     
                     for file in files:
                         col1, col2, col3, col4 = st.columns([2, 3, 2, 2])
+                        
+                        # Column 1: Preview
                         with col1:
-                            # File preview
                             file_ext = file['name'].split('.')[-1].lower()
                             if file_ext in ['jpg', 'jpeg', 'png', 'gif']:
                                 st.image(file['download_url'], width=100)
-                            elif file_ext in ['mp4']:
+                            elif file_ext == 'mp4':
                                 st.video(file['download_url'])
                             else:
                                 st.markdown(f"📄 `{file['name']}`")
                         
+                        # Column 2: File Info
                         with col2:
-                            st.markdown(f"**File:** `{file['name']}`")
+                            st.markdown(f"**File Name:** `{file['name']}`")
+                            st.caption(f"Path: {file['path']}")
                         
+                        # Column 3: Rename
                         with col3:
-                            # Rename functionality
                             new_name = st.text_input(
                                 "New name",
                                 value=file['name'],
-                                key=f"rename_{room}_{file['name']}"
+                                key=f"rename_{file['sha']}"
                             )
                         
+                        # Column 4: Actions
                         with col4:
                             # Delete button
-                            if st.button("🗑️ Delete", key=f"del_{room}_{file['name']}"):
+                            if st.button("🗑️ Delete", key=f"del_{file['sha']}"):
                                 if delete_file(file['path'], file['sha']):
                                     st.success("File deleted!")
                                     st.rerun()
                                 else:
-                                    st.error("Failed to delete file")
+                                    st.error("Delete failed")
                             
                             # Rename button
-                            if st.button("✏️ Rename", key=f"ren_{room}_{file['name']}"):
+                            if st.button("✏️ Rename", key=f"ren_{file['sha']}"):
                                 if new_name.strip() == file['name']:
                                     st.warning("Name unchanged")
                                 elif not new_name.strip():
@@ -520,104 +637,16 @@ def admin_page():
                                         st.success("File renamed!")
                                         st.rerun()
                                     else:
-                                        st.error("Failed to rename file")
-    
-                # Carousel preview at the bottom
-                st.markdown("---")
-                st.subheader("Current Media Preview")
-                media_files = get_github_files(f"{BASE_PATH}/{room}")
-                media_files = [f for f in media_files if f['name'] != 'info.txt']
-                
-                if media_files:
-                    carousel_items = ""
-                    for file in media_files:
-                        ext = file['name'].split('.')[-1].lower()
-                        if ext == "mp4":
-                            media_html = f"""
-                                <video controls style="max-height: 400px; width: 100%;">
-                                    <source src="{file['download_url']}" type="video/mp4">
-                                </video>
-                            """
-                        else:
-                            media_html = (
-                                f'<div class="swiper-zoom-container">'
-                                f'<img src="{file["download_url"]}" '
-                                f'style="max-height: 400px; width: 100%; object-fit: contain;" />'
-                                f'</div>'
-                            )
-                        carousel_items += f'<div class="swiper-slide">{media_html}</div>'
-    
-                    carousel_html = f"""
-                    <link rel="stylesheet" href="https://unpkg.com/swiper@8.0.7/swiper-bundle.min.css">
-                    <style>
-                        .swiper {{
-                            width: 100%;
-                            height: auto;
-                        }}
-                        .swiper-slide {{
-                            text-align: center;
-                            display: flex;
-                            justify-content: center;
-                            align-items: center;
-                        }}
-                        .swiper-slide img, .swiper-slide video {{
-                            max-height: 400px;
-                            width: 100%;
-                            border-radius: 10px;
-                            box-shadow: 0px 5px 15px rgba(0,0,0,0.2);
-                            object-fit: contain;
-                        }}
-                        .swiper-pagination-fraction {{
-                            font-size: 18px;
-                            font-weight: bold;
-                            color: white;
-                            text-shadow: 0 0 5px rgba(0,0,0,0.5);
-                        }}
-                        .swiper-button-next,
-                        .swiper-button-prev {{
-                            width: 30px;
-                            height: 30px;
-                            background-color: rgba(0, 0, 0, 0.4);
-                            border-radius: 50%;
-                        }}
-                        .swiper-button-next:after,
-                        .swiper-button-prev:after {{
-                            font-size: 20px;
-                            color: white;
-                        }}
-                    </style>
-                    <div class="swiper mySwiper">
-                        <div class="swiper-wrapper">
-                            {carousel_items}
-                        </div>
-                        <div class="swiper-pagination"></div>
-                        <div class="swiper-button-next"></div>
-                        <div class="swiper-button-prev"></div>
-                    </div>
-                    <script src="https://unpkg.com/swiper@8.0.7/swiper-bundle.min.js"></script>
-                    <script>
-                        var swiper = new Swiper('.mySwiper', {{
-                            loop: true,
-                            zoom: true,
-                            pagination: {{
-                                el: '.swiper-pagination',
-                                type: 'fraction',
-                            }},
-                            navigation: {{
-                                nextEl: '.swiper-button-next',
-                                prevEl: '.swiper-button-prev',
-                            }},
-                        }});
-                    </script>
-                    """
-                    components.html(carousel_html, height=500)
-                else:
-                    st.info("No media files available in this room")
-        
+                                        st.error("Rename failed")
+                    
+                    # Carousel preview
+                    st.markdown("---")
+                    st.subheader("Content Preview")
+                    display_carousel(files)
 
 
     with tab5:
-        st.header("🚮 Delete Rooms or Subfolders")
+        st.header("🚮 Delete Content")
         search_term = st.text_input("Search rooms by name", key="delete_search").lower()
         
         all_rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
@@ -626,40 +655,59 @@ def admin_page():
         if not filtered_rooms:
             st.info("No rooms found matching your search")
             return
-    
+        
         for room in filtered_rooms:
             with st.expander(f"Room: **{room}**", expanded=False):
-                col1, col2 = st.columns([4, 2])
+                col1, col2 = st.columns([3, 2])
+                
                 with col1:
-                    # Delete room section
-                    if st.button(f"🗑️ Delete Entire Room", key=f"del_room_{room}"):
+                    st.subheader("Delete Entire Room")
+                    if st.button("⚠️ Delete Room", key=f"del_room_{room}"):
                         if delete_room(room):
                             st.success("Room deleted!")
                             st.rerun()
                         else:
-                            st.error("Failed to delete room")
-    
+                            st.error("Delete failed")
+                
                 with col2:
-                    # Delete subfolders section
+                    st.subheader("Delete Subfolder")
                     subfolders = get_subfolders(room)
                     if subfolders:
                         selected_sub = st.selectbox(
-                            "Select Subfolder to Delete",
+                            "Select subfolder",
                             subfolders,
-                            key=f"del_sub_{room}"
+                            key=f"sub_del_{room}"
                         )
-                        if st.button(f"🗑️ Delete Subfolder", key=f"del_sub_btn_{room}"):
+                        if st.button("🗑️ Delete Subfolder", key=f"del_sub_{room}"):
                             if delete_subfolder(room, selected_sub):
-                                st.success(f"Subfolder {selected_sub} deleted!")
+                                st.success("Subfolder deleted!")
                                 st.rerun()
                             else:
-                                st.error("Failed to delete subfolder")
+                                st.error("Delete failed")
                     else:
-                        st.info("No subfolders in this room")                   
-                
-                
+                        st.info("No subfolders in this room")                
+                    
 
-
+    with tab6:
+        st.header("✏️ Rename Main Areas")
+        search_term = st.text_input("Search rooms to rename", key="rename_search").lower()
+        
+        all_rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
+        filtered_rooms = [room for room in all_rooms if search_term in room.lower()]
+        
+        if not filtered_rooms:
+            st.info("No rooms found matching your search")
+            return
+        
+        for room in filtered_rooms:
+            with st.expander(f"Renaming: {room}", expanded=False):
+                new_name = st.text_input("New room name", value=room, key=f"new_name_{room}")
+                if st.button("Confirm Rename", key=f"confirm_rename_{room}"):
+                    if rename_room(room, new_name):
+                        st.success("Room renamed successfully!")
+                        st.rerun()
+                    else:
+                        st.error("Failed to rename room")
 
 
 
