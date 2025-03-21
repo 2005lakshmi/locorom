@@ -204,22 +204,22 @@ def display_main_content(room_name):
     # Main Area Section
     st.markdown("### From Point:")
     main_files = get_github_files(f"{BASE_PATH}/{room_name}")
-    main_media = [f for f in main_files if f['name'] != 'info.txt']
+    
+    # Filter out info.txt and include only media files
+    main_media = [f for f in main_files 
+                 if f['name'] != 'info.txt' 
+                 and f['name'].split('.')[-1].lower() in ['jpg', 'jpeg', 'png', 'gif', 'mp4']]
     
     # Show thumbnail and info in row
     if main_media:
         col1, col2 = st.columns([2, 3])
         with col1:
             first_file = main_media[0]
-            if first_file['name'].split('.')[-1].lower() in ['jpg', 'jpeg', 'png']:
-                st.image(first_file['download_url'], width=200)  # Fixed width instead of use_column_width
+            st.image(first_file['download_url'], width=200)
         with col2:
-            st.markdown("##### Location Info :")
-            
+            st.markdown(f"**Main Area**")
             st.markdown(info_content)
-
-
-        st.markdown("##### Photos :")
+        
         # Main Area Carousel
         display_carousel(main_media, zoom=True)
     else:
@@ -232,24 +232,25 @@ def display_main_content(room_name):
         sub_path = f"{BASE_PATH}/{room_name}/{sub}"
         sub_files = get_github_files(sub_path)
         
+        # Filter subfolder files
+        sub_media = [f for f in sub_files 
+                    if f['name'] not in ['info.txt', 'thumbnail.jpg'] 
+                    and f['name'].split('.')[-1].lower() in ['jpg', 'jpeg', 'png', 'gif', 'mp4']]
+        
         # Subfolder thumbnail and info
         col1, col2 = st.columns([2, 3])
         with col1:
             thumbnail_url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/main/{sub_path}/thumbnail.jpg"
-            st.image(thumbnail_url, width=200)  # Fixed width instead of use_column_width
+            st.image(thumbnail_url, width=200)
         with col2:
             sub_info = get_subfolder_info(room_name, sub)
-            st.markdown("##### Location Info:")
             st.markdown(sub_info)
         
         # Subfolder media carousel
-        sub_media = [f for f in sub_files if f['name'] not in ['info.txt', 'thumbnail.jpg']]
         if sub_media:
-            st.markdown("##### Photos:")
             display_carousel(sub_media, zoom=True)
         else:
             st.info(f"No media available in {sub}")
-
 
 def display_carousel(files, zoom=False):
     """Display media files in a carousel with zoom capability"""
