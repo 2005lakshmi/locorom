@@ -214,8 +214,9 @@ def display_main_content(room_name):
             if first_file['name'].split('.')[-1].lower() in ['jpg', 'jpeg', 'png']:
                 st.image(first_file['download_url'], width=200)  # Fixed width instead of use_column_width
         with col2:
-            st.markdown(f"**Location Info :**")
-            st.markdown(f"# {info_content}")
+            st.markdown("<u>**Location Info :**</u>", unsafe_allow_html=True)
+
+            st.markdown(f"**{info_content}**")
         
         # Main Area Carousel
         display_carousel(main_media, zoom=True)
