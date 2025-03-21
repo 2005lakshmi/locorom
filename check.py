@@ -429,19 +429,27 @@ def admin_page():
     tab1, tab2, tab3, tab4, tab5= st.tabs(["Create Room", "Add Content", "Manage Subfolders", "Manage Files", "🚮 Delete/Rename Rooms"])
 
 
-    
     with tab1:
         with st.form(key="create_room_form"):
             room_name = st.text_input("Room Name", key="create_room_name_input")
-            if st.form_submit_button("Create Room", key="create_room_submit"):
+            submit_button = st.form_submit_button("Create Room", 
+                                                help="Click to create new room",
+                                                type="primary",
+                                                key="create_room_submit_btn")
+            
+            if submit_button:
                 existing_rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
-                if room_name in existing_rooms:
+                if not room_name:
+                    st.error("Please enter a room name")
+                elif room_name in existing_rooms:
                     st.error("Room already exists")
                 else:
                     if create_room_folder(room_name):
                         st.success(f"Room **{room_name}** created successfully!")
+                        st.rerun()
                     else:
                         st.error("Failed to create room")
+
                         
     if 'upload_counter' not in st.session_state:
         st.session_state.upload_counter = 0
