@@ -752,7 +752,7 @@ with tab5:
     
     if not filtered_rooms:
         st.info("No rooms found matching your search")
-        return
+       
 
     for room in filtered_rooms:
         with st.expander(f"Room: **{room}**", expanded=False):
