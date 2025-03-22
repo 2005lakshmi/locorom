@@ -237,32 +237,14 @@ def display_main_content(room_name):
     
     # Show thumbnail and info in row
     if main_media:
-        st.markdown("### From Point:")
+        st.markdown("<h4 style='color: green;'>From Point:</h4>", unsafe_allow_html=True)
+
         col1, col2 = st.columns([2, 3])
         with col1:
             first_file = main_media[0]
             st.image(first_file['download_url'], width=200)
         with col2:
-            st.markdown(
-    """
-    <style>
-    @keyframes blink {
-        50% { opacity: 0.5; }
-    }
-    .hover-blink:hover {
-        color: #ff5733 !important;
-        animation: blink 1s infinite;
-    }
-    </style>
-
-    <p class="hover-blink" style="font-size: 18px; font-weight: bold; color: #333; transition: color 0.3s ease-in-out;">
-        Location Info :
-    </p>
-    """,
-    unsafe_allow_html=True
-)
-
-
+            st.markdown(f"##### Location Info :")
             st.markdown(f"###### {info_content}")
             
         # Main Area Carousel
@@ -274,7 +256,8 @@ def display_main_content(room_name):
     # Subfolders Section
     subfolders = get_subfolders(room_name)
     for sub in subfolders:
-        st.markdown(f"### From {sub}:")
+        st.markdown("<h4 style='color: green;'>From Point:</h4>", unsafe_allow_html=True)
+
         sub_path = f"{BASE_PATH}/{room_name}/{sub}"
         sub_files = get_github_files(sub_path)
         
@@ -287,7 +270,39 @@ def display_main_content(room_name):
         col1, col2 = st.columns([2, 3])
         with col1:
             thumbnail_url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/main/{sub_path}/thumbnail.jpg"
-            st.image(thumbnail_url, width=200)
+            #st.image(thumbnail_url, width=200)
+            st.markdown(
+    f"""
+    <style>
+    .image-container {{
+        display: flex;
+        justify-content: center;
+    }}
+
+    .glowing-border {{
+        width: 200px; /* Same as Streamlit image width */
+        height: auto;
+        border-radius: 10px;
+        padding: 5px;
+        background: linear-gradient(45deg, gold, gray, gold);
+        background-size: 200% 200%;
+        animation: glowing 3s infinite linear;
+    }}
+
+    @keyframes glowing {{
+        0% {{ background-position: 0% 50%; }}
+        50% {{ background-position: 100% 50%; }}
+        100% {{ background-position: 0% 50%; }}
+    }}
+    </style>
+
+    <div class="image-container">
+        <img src="{thumbnail_url}" class="glowing-border">
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
         with col2:
             sub_info = get_subfolder_info(room_name, sub)
             st.markdown("##### Location Info :")
