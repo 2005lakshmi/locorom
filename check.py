@@ -250,6 +250,7 @@ def display_main_content(room_name):
             
         # Main Area Carousel
         st.markdown("##### Photos ")
+        st.write("Path through Photos")
         display_carousel(main_media, zoom=True)
         st.markdown("<hr style='border: 1px solid gray; margin: 0px 0;'>", unsafe_allow_html=True)
 
