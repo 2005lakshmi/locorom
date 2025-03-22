@@ -251,7 +251,7 @@ def display_main_content(room_name):
         # Main Area Carousel
         st.markdown("##### Photos ")
         display_carousel(main_media, zoom=True)
-        st.markdown("<hr style='border: 1px solid gray; margin: 5px 0;'>", unsafe_allow_html=True)
+        st.markdown("<hr style='border: 1px solid gray; margin: 0px 0;'>", unsafe_allow_html=True)
 
     #else:
     #   st.info("No media available in main area")
@@ -287,7 +287,7 @@ def display_main_content(room_name):
             display_carousel(sub_media, zoom=True)
         else:
             st.info(f"No media available in {sub}")
-        st.markdown("<hr style='border: 1px solid gray; margin: 5px 0;'>", unsafe_allow_html=True)
+        st.markdown("<hr style='border: 1px solid gray; margin: 0px 0;'>", unsafe_allow_html=True)
 
 
 def display_carousel(files, zoom=False):
