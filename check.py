@@ -227,7 +227,7 @@ def display_main_content(room_name):
     info_content = get_room_info(room_name)
     
     # Main Area Section
-    st.markdown("### From Point:")
+    #st.markdown("### From Point:")
     main_files = get_github_files(f"{BASE_PATH}/{room_name}")
     
     # Filter out info.txt and include only media files
@@ -237,18 +237,20 @@ def display_main_content(room_name):
     
     # Show thumbnail and info in row
     if main_media:
+        st.markdown("### From Point:")
         col1, col2 = st.columns([2, 3])
         with col1:
             first_file = main_media[0]
             st.image(first_file['download_url'], width=200)
         with col2:
-            st.markdown(f"**Main Area**")
-            st.markdown(info_content)
+            st.markdown(f"<u>##### Location Info :</u>",unsafe_allow_html=True)
+            st.markdown(f"##### {info_content}")
         
         # Main Area Carousel
+        st.markdown(f"<u>##### Location Info :</u>",unsafe_allow_html=True)
         display_carousel(main_media, zoom=True)
-    else:
-        st.info("No media available in main area")
+    #else:
+    #   st.info("No media available in main area")
 
     # Subfolders Section
     subfolders = get_subfolders(room_name)
