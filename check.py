@@ -284,7 +284,7 @@ def display_main_content(room_name):
         height: auto;
         border-radius: 10px;
         padding: 5px;
-        background: linear-gradient(45deg, #FBFFE4,#3D8D7A,#FBFFE4);
+        background: linear-gradient(45deg, #3D3D3D,5D8736,#3D3D3D);
         background-size: 200% 200%;
         animation: glowing 3s infinite linear;
     }}
