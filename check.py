@@ -246,27 +246,22 @@ def display_main_content(room_name):
             st.markdown(
     """
     <style>
-    .hover-blink {
-        font-size: 18px;
-        font-weight: bold;
-        color: #333;
-        transition: color 0.3s ease-in-out;
-    }
-    
-    .hover-blink:hover {
-        color: #ff5733;
-        animation: blink 1s infinite;
-    }
-    
     @keyframes blink {
         50% { opacity: 0.5; }
     }
+    .hover-blink:hover {
+        color: #ff5733 !important;
+        animation: blink 1s infinite;
+    }
     </style>
-    
-    <p class="hover-blink">Location Info :</p>
-    """, 
+
+    <p class="hover-blink" style="font-size: 18px; font-weight: bold; color: #333; transition: color 0.3s ease-in-out;">
+        Location Info :
+    </p>
+    """,
     unsafe_allow_html=True
 )
+
 
             st.markdown(f"###### {info_content}")
             
