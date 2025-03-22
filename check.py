@@ -893,7 +893,7 @@ def default_page():
             align-items: center;
         }
         .logo {
-            width: 40px;  /* Adjust size */
+            width: 40px;
             height: 40px;
             border-radius: 50%;
             background-color: white;
@@ -904,7 +904,7 @@ def default_page():
             margin-right: 10px;
         }
         .logo img {
-            width: 30px;  /* Adjust logo size */
+            width: 30px;
             height: 30px;
             border-radius: 50%;
         }
@@ -920,12 +920,13 @@ def default_page():
 
     <div class="logo-container">
         <div class="logo">
-            <img src="LOGO_URL_HERE" alt="Logo">
+            <img src="https://raw.githubusercontent.com/2005lakshmi/locorom/main/Untitled%20design%20(1).png" alt="Logo">
         </div>
         <h1 class="room-title">🔍 Room <span class="room-code">[MITM]</span></h1>
     </div>
     """, unsafe_allow_html=True)
 
+    
     st.markdown("<hr style='border: 1px solid gray; margin: 5px 0;'>", unsafe_allow_html=True)
 
     # Search for rooms
