@@ -883,6 +883,7 @@ def default_page():
     st.markdown("""
     <h1>🔍 Room <span style="color: green;font-size: 15px;">[MITM]</span></h1>
     """, unsafe_allow_html=True)
+    st.markdown("<hr style='border: 1px solid gray; margin: 5px 0;'>", unsafe_allow_html=True)
 
     # Search for rooms
     search_term = st.text_input("**Search Room**", "", placeholder="example., 415B").strip().lower()
