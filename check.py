@@ -244,7 +244,7 @@ def display_main_content(room_name):
             first_file = main_media[0]
             st.image(first_file['download_url'], width=200)
         with col2:
-            st.markdown("<h5 style='color:blue;'>Location Info :</h5>", unsafe_allow_html=True)
+            st.markdown("<h5 style='color:#0D92F4;'>Location Info :</h5>", unsafe_allow_html=True)
 
             st.markdown(f"###### {info_content}")
             
@@ -276,7 +276,7 @@ def display_main_content(room_name):
 
         with col2:
             sub_info = get_subfolder_info(room_name, sub)
-            st.markdown("<h5 style='color:blue;'>Location Info :</h5>", unsafe_allow_html=True)
+            st.markdown("<h5 style='color:#0D92F4;'>Location Info :</h5>", unsafe_allow_html=True)
             st.markdown(f"###### {sub_info}")
         
         # Subfolder media carousel
