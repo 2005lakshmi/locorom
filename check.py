@@ -245,7 +245,7 @@ def display_main_content(room_name):
         with col2:
             st.markdown(f"##### Location Info :")
             st.markdown(f"###### {info_content}")
-        
+            st.markdown("<hr style = 'border : 1px solid gray;'>", unsafe_allow_html = True)
         # Main Area Carousel
         st.markdown("##### Photos ")
         display_carousel(main_media, zoom=True)
