@@ -885,9 +885,47 @@ def admin_page():
 
 
 def default_page():
+    #st.markdown("""<h1>🔍 Room <span style="color: green;font-size: 15px;">[MITM]</span></h1>""", unsafe_allow_html=True)
     st.markdown("""
-    <h1>🔍 Room <span style="color: green;font-size: 15px;">[MITM]</span></h1>
+    <style>
+        .logo-container {
+            display: flex;
+            align-items: center;
+        }
+        .logo {
+            width: 40px;  /* Adjust size */
+            height: 40px;
+            border-radius: 50%;
+            background-color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 5px rgba(0,0,0,0.2);
+            margin-right: 10px;
+        }
+        .logo img {
+            width: 30px;  /* Adjust logo size */
+            height: 30px;
+            border-radius: 50%;
+        }
+        .room-title {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .room-code {
+            color: green;
+            font-size: 15px;
+        }
+    </style>
+
+    <div class="logo-container">
+        <div class="logo">
+            <img src="LOGO_URL_HERE" alt="Logo">
+        </div>
+        <h1 class="room-title">🔍 Room <span class="room-code">[MITM]</span></h1>
+    </div>
     """, unsafe_allow_html=True)
+
     st.markdown("<hr style='border: 1px solid gray; margin: 5px 0;'>", unsafe_allow_html=True)
 
     # Search for rooms
