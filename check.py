@@ -243,11 +243,11 @@ def display_main_content(room_name):
             first_file = main_media[0]
             st.image(first_file['download_url'], width=200)
         with col2:
-            st.markdown(f"<u>##### Location Info :</u>",unsafe_allow_html=True)
-            st.markdown(f"##### {info_content}")
+            st.markdown(f"##### Location Info :")
+            st.markdown(f"###### {info_content}")
         
         # Main Area Carousel
-        st.markdown(f"<u>##### Location Info :</u>",unsafe_allow_html=True)
+        st.markdown("##### Photos ")
         display_carousel(main_media, zoom=True)
     #else:
     #   st.info("No media available in main area")
@@ -271,10 +271,12 @@ def display_main_content(room_name):
             st.image(thumbnail_url, width=200)
         with col2:
             sub_info = get_subfolder_info(room_name, sub)
-            st.markdown(sub_info)
+            st.markdown("##### Location Info :")
+            st.markdown(f"###### {sub_info}")
         
         # Subfolder media carousel
         if sub_media:
+            st.markdown("##### Photos")
             display_carousel(sub_media, zoom=True)
         else:
             st.info(f"No media available in {sub}")
