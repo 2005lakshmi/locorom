@@ -895,7 +895,7 @@ def default_page():
         .logo {
             width: 60px;  /* Increased size */
             height: 60px;
-            border-radius: 50%;
+            border-radius: 60%;
             background-color: white;
             display: flex;
             justify-content: center;
@@ -904,9 +904,9 @@ def default_page():
             margin-right: 10px;
         }
         .logo img {
-            width: 50px;  /* Increased logo size */
-            height: 50px;
-            border-radius: 50%;
+            width: 60px;  /* Increased logo size */
+            height: 60px;
+            border-radius: 60%;
         }
         .room-title {
             font-size: 24px;
