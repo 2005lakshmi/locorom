@@ -243,10 +243,33 @@ def display_main_content(room_name):
             first_file = main_media[0]
             st.image(first_file['download_url'], width=200)
         with col2:
-            st.markdown(f"##### Location Info :")
-            st.markdown(f"###### {info_content}")
-            st.markdown("<hr style='border: 1px solid gray; margin: 0px 0;'>", unsafe_allow_html=True)
+            st.markdown(
+    """
+    <style>
+    .hover-blink {
+        font-size: 18px;
+        font-weight: bold;
+        color: #333;
+        transition: color 0.3s ease-in-out;
+    }
+    
+    .hover-blink:hover {
+        color: #ff5733;
+        animation: blink 1s infinite;
+    }
+    
+    @keyframes blink {
+        50% { opacity: 0.5; }
+    }
+    </style>
+    
+    <p class="hover-blink">Location Info :</p>
+    """, 
+    unsafe_allow_html=True
+)
 
+            st.markdown(f"###### {info_content}")
+            
         # Main Area Carousel
         st.markdown("##### Photos ")
         display_carousel(main_media, zoom=True)
