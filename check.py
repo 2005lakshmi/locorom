@@ -903,6 +903,8 @@ def default_page():
 
     # Select room
     selected_room = st.radio("Select Room", filtered_rooms)
+    st.markdown("<hr style='border: 1px solid gray; margin: 0px 0;'>", unsafe_allow_html=True)
+
     st.subheader(f"Room: :red[{selected_room}]")
 
     # Display main content
