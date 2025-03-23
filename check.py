@@ -890,25 +890,16 @@ def default_page():
     <style>
         .logo-container {
             display: flex;
+            justify-content: center; /* Center the logo */
             align-items: center;
-        }
-        .logo {
-            width: 60px;  /* Increased size */
-            height: 60px;
-            border-radius: 50%;
-            background-color: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            box-shadow: 0 0 5px rgba(0,0,0,0.2);
-            margin-right: 10px;
+            margin-bottom: -10px; /* Adjust spacing to bring header closer */
         }
         .logo img {
-            width: 55px;  /* Increased logo size */
-            height: 55px;
-            border-radius: 40%;
+            width: 80px;  /* Adjust size as needed */
+            height: auto;
         }
         .room-title {
+            text-align: center; /* Center the header text */
             font-size: 24px;
             font-weight: bold;
         }
@@ -919,11 +910,9 @@ def default_page():
     </style>
 
     <div class="logo-container">
-        <div class="logo">
-            <img src="https://raw.githubusercontent.com/2005lakshmi/locorom/main/logo.png" alt="Logo">
-        </div>
-        <h1 class="room-title">🔍 Room <span class="room-code">[MITM]</span></h1>
+        <img src="https://raw.githubusercontent.com/2005lakshmi/locorom/main/logo_locorom.png" alt="Logo">
     </div>
+    <h1 class="room-title">🔍 Room <span class="room-code">[MITM]</span></h1>
     """, unsafe_allow_html=True)
 
     
