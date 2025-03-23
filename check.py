@@ -895,7 +895,7 @@ def default_page():
             margin-bottom: -10px; /* Adjust spacing to bring header closer */
         }
         .logo img {
-            width: 35px;  /* Adjust size as needed */
+            width: 15px;  /* Adjust size as needed */
             height: auto;
         }
         .room-title {
