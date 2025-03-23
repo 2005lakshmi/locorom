@@ -893,8 +893,8 @@ def default_page():
             align-items: center;
         }
         .logo {
-            width: 55px;
-            height: 55px;
+            width: 110px;  /* Doubled from 55px */
+            height: 110px; /* Doubled from 55px */
             border-radius: 650%;
             background-color: white;
             display: flex;
@@ -904,8 +904,8 @@ def default_page():
             margin-right: 10px;
         }
         .logo img {
-            width: 45px;
-            height: 45px;
+            width: 90px;  /* Doubled from 45px */
+            height: 90px; /* Doubled from 45px */
             border-radius: 65%;
         }
         .room-title {
@@ -923,7 +923,6 @@ def default_page():
         <div class="logo">
             <img src="https://raw.githubusercontent.com/2005lakshmi/locorom/main/logo_locorom.png" alt="Logo">
         </div>
-        
     </div>
     """, unsafe_allow_html=True)
 
