@@ -888,32 +888,32 @@ def default_page():
     #st.markdown("""<h1>🔍 Room <span style="color: green;font-size: 15px;">[MITM]</span></h1>""", unsafe_allow_html=True)
     st.markdown("""
     <style>
-        .logo-container {
+        .header-container {
             display: flex;
-            justify-content: center; /* Center the logo */
             align-items: center;
-            margin-bottom: -5px; /* Adjust spacing between logo and header */
-        }
-        .logo img {
-            width: 24px;  /* Adjusted to match search icon size */
-            height: auto;
+            justify-content: center; /* Center the whole header */
         }
         .room-title {
-            text-align: center; /* Center the header text */
             font-size: 24px;
             font-weight: bold;
+            margin-right: 8px; /* Small space between text and logo */
         }
         .room-code {
             color: green;
             font-size: 15px;
         }
+        .logo img {
+            width: 24px;  /* Match header text size */
+            height: auto;
+        }
     </style>
 
-    <div class="logo-container">
-        <img src="https://raw.githubusercontent.com/2005lakshmi/locorom/main/logo_locorom.png" alt="Logo">
+    <div class="header-container">
+        <h1 class="room-title">🔍 Room <span class="room-code">[MITM]</span></h1>
+        <img class="logo" src="https://raw.githubusercontent.com/2005lakshmi/locorom/main/logo_locorom.png" alt="Logo">
     </div>
-    <h1 class="room-title">🔍 Room <span class="room-code">[MITM]</span></h1>
     """, unsafe_allow_html=True)
+
 
 
     
