@@ -896,14 +896,14 @@ def default_page():
         .room-title {
             font-size: 24px;
             font-weight: bold;
-            margin-right: 8px; /* Small space between text and logo */
+            margin-right: 5px; /* Small space between text and logo */
         }
         .room-code {
             color: green;
             font-size: 15px;
         }
         .logo img {
-            width: 24px;  /* Match header text size */
+            width: 5px;  /* Reduced size (1/10th of before) */
             height: auto;
         }
     </style>
@@ -913,7 +913,6 @@ def default_page():
         <img class="logo" src="https://raw.githubusercontent.com/2005lakshmi/locorom/main/logo_locorom.png" alt="Logo">
     </div>
     """, unsafe_allow_html=True)
-
 
 
     
