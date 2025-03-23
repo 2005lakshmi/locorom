@@ -5,7 +5,7 @@ import streamlit as st
 from pathlib import Path
 import time
 import streamlit.components.v1 as components
-
+import string
 # Configuration
 GITHUB_TOKEN = st.secrets["github"]["token"]
 GITHUB_REPO = "2005lakshmi/locorom"
@@ -146,8 +146,45 @@ def get_next_file_number(room_name, subfolder=None):
                 continue
     return max(numbers) + 1 if numbers else 1
 
+import string
+
+def next_alphabetical_filename(existing_files):
+    """Find the next available alphabetical filename (a, b, c, ..., z, aa, ab, ...)"""
+    # Filter to include only filenames with all lowercase letters (ignore numerical/others)
+    existing_names = [
+        f['name'].split('.')[0] 
+        for f in existing_files 
+        if f['type'] == 'file' 
+        and all(c in string.ascii_lowercase for c in f['name'].split('.')[0])
+    ]
+    existing_names = sorted(existing_names)  # Sort lexicographically
+
+    if not existing_names:
+        return 'a'  # Start with 'a' if no valid files exist
+
+    last_name = existing_names[-1]
+
+    # Convert last name to next alphabetic sequence
+    if last_name == 'z':
+        return 'aa'
+    elif len(last_name) > 1 and all(c == 'z' for c in last_name):
+        return 'a' * (len(last_name) + 1)
+    else:
+        last_char_list = list(last_name)
+        for i in range(len(last_char_list)-1, -1, -1):
+            if last_char_list[i] != 'z':
+                last_char_list[i] = chr(ord(last_char_list[i]) + 1)
+                # Reset all characters to the right to 'a'
+                for j in range(i+1, len(last_char_list)):
+                    last_char_list[j] = 'a'
+                return ''.join(last_char_list)
+            last_char_list[i] = 'a'  # Reset 'z' to 'a' and continue left
+        
+        # If all characters were 'z' (e.g., 'zz'), return 'aaa'
+        return 'a' * (len(last_char_list) + 1)
+
 def upload_room_file(room, uploaded_file, file_type, subfolder=None):
-    """Upload file to room or subfolder"""
+    """Upload file to room or subfolder with alphabetical filenames"""
     try:
         ext = file_type.split('/')[-1].lower()
         if ext == 'jpeg':
@@ -157,23 +194,15 @@ def upload_room_file(room, uploaded_file, file_type, subfolder=None):
         if subfolder:
             base_path += f"/{subfolder}"
             
-        # Get next file number with proper list comprehension
+        # Get next available alphabetical filename
         files = get_github_files(base_path)
-        numbers = [
-            int(Path(f['name']).stem)  # Convert filename stem to integer
-            for f in files
-            if (
-                f['type'] == 'file' 
-                and Path(f['name']).stem.isdigit()  # Verify numeric filename
-            )
-        ]
-        next_num = max(numbers) + 1 if numbers else 1
+        next_filename = next_alphabetical_filename(files)
 
-        file_path = f"{base_path}/{next_num}.{ext}"
+        file_path = f"{base_path}/{next_filename}.{ext}"
         content = base64.b64encode(uploaded_file.read()).decode()
         
         data = {
-            "message": f"Add file {next_num}.{ext} to {base_path}",
+            "message": f"Add file {next_filename}.{ext} to {base_path}",
             "content": content
         }
         
