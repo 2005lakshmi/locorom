@@ -895,8 +895,10 @@ def default_page():
             margin-bottom: -10px; /* Adjust spacing to bring header closer */
         }
         .logo img {
-            width: 15px;  /* Adjust size as needed */
-            height: auto;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: white;
         }
         .room-title {
             text-align: center; /* Center the header text */
