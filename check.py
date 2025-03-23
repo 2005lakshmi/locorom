@@ -893,18 +893,17 @@ def default_page():
             align-items: center;
         }
         .logo {
-            width: 55px;
-            height: 55px;
+            width: 83px;  /* Increased from 55px by 1.5x */
+            height: 83px; /* Increased from 55px by 1.5x */
             background-color: white;
             display: flex;
             justify-content: center;
             align-items: center;
-            box-shadow: 0 0 5px rgba(0,0,0,0.2);
             margin-right: 10px;
         }
         .logo img {
-            width: 45px;
-            height: 45px;
+            width: 68px;  /* Increased from 45px by 1.5x */
+            height: 68px;
         }
         .room-title {
             font-size: 24px;
@@ -923,6 +922,7 @@ def default_page():
         </div>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
