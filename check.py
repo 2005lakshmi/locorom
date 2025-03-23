@@ -892,12 +892,11 @@ def default_page():
             display: flex;
             justify-content: center; /* Center the logo */
             align-items: center;
-            margin-bottom: -10px; /* Adjust spacing to bring header closer */
+            margin-bottom: -5px; /* Adjust spacing between logo and header */
         }
         .logo img {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
+            width: 24px;  /* Adjusted to match search icon size */
+            height: auto;
         }
         .room-title {
             text-align: center; /* Center the header text */
@@ -915,6 +914,7 @@ def default_page():
     </div>
     <h1 class="room-title">🔍 Room <span class="room-code">[MITM]</span></h1>
     """, unsafe_allow_html=True)
+
 
     
     st.markdown("<hr style='border: 1px solid gray; margin: 5px 0;'>", unsafe_allow_html=True)
