@@ -134,30 +134,21 @@ def delete_room(room_name):
         st.error(f"Error deleting room: {str(e)}")
         return False
         
-def get_next_file_number(room_name, subfolder=None):
-    path = f"{BASE_PATH}/{room_name}" + (f"/{subfolder}" if subfolder else "")
-    files = get_github_files(path)
-    numbers = []
-    for file in files:
-        if file['name'] not in ['info.txt', 'thumbnail.jpg'] and file['type'] == 'file':
-            try:
-                numbers.append(int(Path(file['name']).stem))
-            except ValueError:
-                continue
-    return max(numbers) + 1 if numbers else 1
 
-import string
 
 def next_alphabetical_filename(existing_files):
-    """Find the next available alphabetical filename (a, b, c, ..., z, aa, ab, ...)"""
-    # Filter to include only filenames with all lowercase letters (ignore numerical/others)
+    """Find the next available alphabetical filename (a, b, ..., z, aa, ab, ...)"""
     existing_names = [
-        f['name'].split('.')[0] 
-        for f in existing_files 
-        if f['type'] == 'file' 
-        and all(c in string.ascii_lowercase for c in f['name'].split('.')[0])
+        f['name'].split('.')[0]
+        for f in existing_files
+        if (
+            f['type'] == 'file' 
+            and f['name'] not in ['info.txt', 'thumbnail.jpg']  # Add exclusion
+            and all(c in string.ascii_lowercase for c in f['name'].split('.')[0])
+        )
     ]
-    existing_names = sorted(existing_names)  # Sort lexicographically
+    existing_names = sorted(existing_names)
+    
 
     if not existing_names:
         return 'a'  # Start with 'a' if no valid files exist
