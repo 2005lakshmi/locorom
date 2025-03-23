@@ -893,9 +893,8 @@ def default_page():
             align-items: center;
         }
         .logo {
-            width: 110px;  /* Doubled from 55px */
-            height: 110px; /* Doubled from 55px */
-            border-radius: 650%;
+            width: 55px;
+            height: 55px;
             background-color: white;
             display: flex;
             justify-content: center;
@@ -904,9 +903,8 @@ def default_page():
             margin-right: 10px;
         }
         .logo img {
-            width: 90px;  /* Doubled from 45px */
-            height: 90px; /* Doubled from 45px */
-            border-radius: 65%;
+            width: 45px;
+            height: 45px;
         }
         .room-title {
             font-size: 24px;
