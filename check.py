@@ -1145,6 +1145,16 @@ def default_page():
 
 # Main app execution
 def main():
+
+    from streamlit.script_run_context import add_script_run_ctx
+    from threading import current_thread
+    
+    # Initialize context
+    ctx = Runtime.instance().get_script_run_ctx()
+    if ctx:
+        add_script_run_ctx(current_thread(), ctx)
+
+
     # Initialize session state
     if 'page' not in st.session_state:
         st.session_state.page = "Default Page"
