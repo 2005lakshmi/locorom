@@ -899,87 +899,114 @@ def admin_page():
                         st.error("Failed to update thumbnail")
 
     with tab7:
-        st.header("📥 Copy Files Between Rooms")
+        st.header("📥 Copy Files Between Locations")
         
         # Get list of all rooms
         all_rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
         
+        # Source selection
         col1, col2 = st.columns(2)
         with col1:
             source_room = st.selectbox("Source Room", all_rooms, key="copy_source")
         with col2:
-            dest_room = st.selectbox("Destination Room", all_rooms, key="copy_dest")
+            source_sub = st.selectbox("Source Location", 
+                                    ["Main Area"] + get_subfolders(source_room), 
+                                    key="copy_source_sub")
     
-        # Get files from source room (main area only)
-        source_files = get_github_files(f"{BASE_PATH}/{source_room}")
+        # Destination selection
+        col3, col4 = st.columns(2)
+        with col3:
+            dest_room = st.selectbox("Destination Room", all_rooms, key="copy_dest")
+        with col4:
+            dest_sub = st.selectbox("Destination Location", 
+                                  ["Main Area"] + get_subfolders(dest_room), 
+                                  key="copy_dest_sub")
+    
+        # Get files from source
+        source_path = f"{BASE_PATH}/{source_room}"
+        if source_sub != "Main Area":
+            source_path += f"/{source_sub}"
+            
+        source_files = get_github_files(source_path)
         source_files = [f for f in source_files 
                        if f['type'] == 'file' 
                        and f['name'] not in ['info.txt', 'thumbnail.jpg']
-                       and f['name'].split('.')[-1].lower() in ['jpg', 'jpeg', 'png', 'gif', 'mp4']]
+                       and Path(f['name']).suffix[1:].lower() in ['jpg', 'jpeg', 'png', 'gif', 'mp4']]
     
         if not source_files:
-            st.info("No files available to copy in source room")
+            st.info("No files available to copy in selected source location")
         else:
             st.subheader("Select Files to Copy")
-            
-            # Create checkboxes for selection
             selected_files = []
+            
+            # Display files in a grid
             cols = st.columns(4)
             for idx, file in enumerate(source_files):
                 with cols[idx % 4]:
-                    # Display thumbnail preview
-                    ext = file['name'].split('.')[-1].lower()
-                    if ext in ['jpg', 'jpeg', 'png', 'gif']:
-                        st.image(file['download_url'], width=100)
-                    else:
-                        st.video(file['download_url'])
+                    # Display preview
+                    try:
+                        if file['name'].split('.')[-1].lower() in ['jpg', 'jpeg', 'png', 'gif']:
+                            st.image(file['download_url'], use_column_width=True)
+                        elif file['name'].split('.')[-1].lower() == 'mp4':
+                            st.video(file['download_url'])
+                    except Exception as e:
+                        st.error(f"Preview failed: {str(e)}")
                     
-                    # Checkbox with filename
-                    if st.checkbox(file['name'], key=f"copy_{file['name']}"):
+                    # File selection checkbox
+                    if st.checkbox(f"Select {file['name']", 
+                                  key=f"copy_{file['name']}_{idx}"):
                         selected_files.append(file)
     
-            if selected_files and st.button("Copy Selected Files"):
-                progress_bar = st.progress(0)
-                total_files = len(selected_files)
-                success_count = 0
-                
-                for i, file in enumerate(selected_files):
-                    try:
-                        # Get file content
-                        response = requests.get(file['download_url'])
-                        if response.status_code != 200:
-                            continue
-                            
-                        # Get next available name in destination
-                        dest_files = get_github_files(f"{BASE_PATH}/{dest_room}")
-                        next_name = next_alphabetical_filename(dest_files)
-                        ext = file['name'].split('.')[-1].lower()
-                        
-                        # Upload to destination
-                        file_path = f"{BASE_PATH}/{dest_room}/{next_name}.{ext}"
-                        content = base64.b64encode(response.content).decode()
-                        
-                        data = {
-                            "message": f"Copied {file['name']} from {source_room}",
-                            "content": content
-                        }
-                        
-                        response = requests.put(
-                            f"https://api.github.com/repos/{GITHUB_REPO}/contents/{file_path}",
-                            json=data,
-                            headers=HEADERS
-                        )
-                        
-                        if response.status_code == 201:
-                            success_count += 1
-                        
-                    except Exception as e:
-                        st.error(f"Failed to copy {file['name']}: {str(e)}")
+            if selected_files:
+                if st.button("✨ Copy Selected Files"):
+                    progress_bar = st.progress(0)
+                    total = len(selected_files)
+                    success_count = 0
                     
-                    progress_bar.progress((i+1)/total_files)
-                
-                st.success(f"Copied {success_count}/{total_files} files successfully!")
-                st.rerun()
+                    for i, file in enumerate(selected_files):
+                        try:
+                            # Get destination path
+                            dest_path = f"{BASE_PATH}/{dest_room}"
+                            if dest_sub != "Main Area":
+                                dest_path += f"/{dest_sub}"
+                                
+                            # Get existing files in destination
+                            dest_files = get_github_files(dest_path)
+                            
+                            # Generate new filename
+                            next_name = next_alphabetical_filename(dest_files)
+                            ext = Path(file['name']).suffix[1:].lower()
+                            
+                            # Get file content
+                            response = requests.get(file['download_url'])
+                            if response.status_code != 200:
+                                continue
+                                
+                            # Upload to destination
+                            file_path = f"{dest_path}/{next_name}.{ext}"
+                            content = base64.b64encode(response.content).decode()
+                            
+                            data = {
+                                "message": f"Copied from {source_room}/{source_sub}",
+                                "content": content
+                            }
+                            
+                            response = requests.put(
+                                f"https://api.github.com/repos/{GITHUB_REPO}/contents/{file_path}",
+                                json=data,
+                                headers=HEADERS
+                            )
+                            
+                            if response.status_code == 201:
+                                success_count += 1
+                                
+                        except Exception as e:
+                            st.error(f"Failed to copy {file['name']}: {str(e)}")
+                        
+                        progress_bar.progress((i+1)/total)
+                    
+                    st.success(f"Successfully copied {success_count}/{total} files")
+                    st.rerun()
 
 
 
