@@ -907,60 +907,100 @@ def admin_page():
     with tab7:
         st.header("📥 Copy Files Between Locations")
         
-        # Get list of all rooms
-        all_rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
-        
+        def debug_api_call(path):
+            """Debug helper for GitHub API calls"""
+            try:
+                url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{path}"
+                response = requests.get(url, headers=HEADERS)
+                st.write(f"API Call: {url}")
+                st.write(f"Status Code: {response.status_code}")
+                if response.status_code != 200:
+                    st.error(f"API Error: {response.text}")
+                return response.json() if response.status_code == 200 else []
+            except Exception as e:
+                st.error(f"API Exception: {str(e)}")
+                return []
+    
+        # Get rooms with debugging
+        all_rooms = []
+        try:
+            rooms_response = debug_api_call(BASE_PATH)
+            all_rooms = [item['name'] for item in rooms_response if item['type'] == 'dir']
+        except Exception as e:
+            st.error(f"Room fetch failed: {str(e)}")
+    
+        if not all_rooms:
+            st.error("No rooms found in repository!")
+            return
+    
         # Source selection
         col1, col2 = st.columns(2)
         with col1:
             source_room = st.selectbox("Source Room", all_rooms, key="copy_source")
         with col2:
-            source_sub = st.selectbox("Source Location", 
-                                    ["Main Area"] + get_subfolders(source_room), 
-                                    key="copy_source_sub")
+            source_subfolders = ["Main Area"] + get_subfolders(source_room)
+            source_sub = st.selectbox("Source Location", source_subfolders, key="copy_source_sub")
     
         # Destination selection
         col3, col4 = st.columns(2)
         with col3:
             dest_room = st.selectbox("Destination Room", all_rooms, key="copy_dest")
         with col4:
-            dest_sub = st.selectbox("Destination Location", 
-                                  ["Main Area"] + get_subfolders(dest_room), 
-                                  key="copy_dest_sub")
+            dest_subfolders = ["Main Area"] + get_subfolders(dest_room)
+            dest_sub = st.selectbox("Destination Location", dest_subfolders, key="copy_dest_sub")
     
-        # Get files from source
+        # Get source files with detailed debugging
         source_path = f"{BASE_PATH}/{source_room}"
         if source_sub != "Main Area":
             source_path += f"/{source_sub}"
-            
-        source_files = get_github_files(source_path)
-        source_files = [f for f in source_files 
-                       if f['type'] == 'file' 
-                       and f['name'] not in ['info.txt', 'thumbnail.jpg']
-                       and Path(f['name']).suffix[1:].lower() in ['jpg', 'jpeg', 'png', 'gif', 'mp4']]
+        
+        st.write(f"## Debugging Source Path: {source_path}")
+        source_files = debug_api_call(source_path)
+        
+        if not isinstance(source_files, list):
+            st.error("Invalid response format from GitHub API")
+            return
     
-        if not source_files:
+        # Filter files with extension check
+        valid_extensions = ['jpg', 'jpeg', 'png', 'gif', 'mp4']
+        filtered_files = []
+        for f in source_files:
+            if f['type'] == 'file' and f['name'] not in ['info.txt', 'thumbnail.jpg']:
+                try:
+                    ext = Path(f['name']).suffix[1:].lower()
+                    if ext in valid_extensions:
+                        filtered_files.append(f)
+                except Exception as e:
+                    st.error(f"Error processing {f['name']}: {str(e)}")
+                    continue
+    
+        st.write(f"## Found {len(filtered_files)} files in source")
+    
+        if not filtered_files:
             st.info("No files available to copy in selected source location")
         else:
             st.subheader("Select Files to Copy")
             selected_files = []
             
-            # Display files in a grid
+            # Display files in grid with error handling
             cols = st.columns(4)
-            for idx, file in enumerate(source_files):
+            for idx, file in enumerate(filtered_files):
                 with cols[idx % 4]:
-                    # Display preview
+                    container = st.container()
                     try:
+                        # File preview
                         if file['name'].split('.')[-1].lower() in ['jpg', 'jpeg', 'png', 'gif']:
-                            st.image(file['download_url'], use_column_width=True)
+                            container.image(file['download_url'], use_column_width=True)
                         elif file['name'].split('.')[-1].lower() == 'mp4':
-                            st.video(file['download_url'])
+                            container.video(file['download_url'])
+                        else:
+                            container.markdown(f"📄 {file['name']}")
                     except Exception as e:
-                        st.error(f"Preview failed: {str(e)}")
+                        container.error(f"Preview failed: {str(e)}")
                     
-                    # File selection checkbox
-                    if st.checkbox(f"Select {file['name']}", 
-                                  key=f"copy_{file['name']}_{idx}"):
+                    # Checkbox with safe key
+                    if container.checkbox(f"Copy {file['name']", 
+                                         key=f"copy_{source_room}_{source_sub}_{file['name']}_{idx}"):
                         selected_files.append(file)
     
             if selected_files:
@@ -968,6 +1008,7 @@ def admin_page():
                     progress_bar = st.progress(0)
                     total = len(selected_files)
                     success_count = 0
+                    error_messages = []
                     
                     for i, file in enumerate(selected_files):
                         try:
@@ -975,43 +1016,54 @@ def admin_page():
                             dest_path = f"{BASE_PATH}/{dest_room}"
                             if dest_sub != "Main Area":
                                 dest_path += f"/{dest_sub}"
-                                
-                            # Get existing files in destination
-                            dest_files = get_github_files(dest_path)
                             
-                            # Generate new filename
+                            # Get destination files
+                            dest_files = debug_api_call(dest_path)
                             next_name = next_alphabetical_filename(dest_files)
-                            ext = Path(file['name']).suffix[1:].lower()
                             
                             # Get file content
                             response = requests.get(file['download_url'])
                             if response.status_code != 200:
+                                error_messages.append(f"Failed to download {file['name']} (HTTP {response.status_code})")
                                 continue
                                 
                             # Upload to destination
+                            ext = Path(file['name']).suffix[1:].lower()
                             file_path = f"{dest_path}/{next_name}.{ext}"
                             content = base64.b64encode(response.content).decode()
                             
                             data = {
-                                "message": f"Copied from {source_room}/{source_sub}",
+                                "message": f"Copied from {source_path}",
                                 "content": content
                             }
                             
-                            response = requests.put(
+                            upload_response = requests.put(
                                 f"https://api.github.com/repos/{GITHUB_REPO}/contents/{file_path}",
                                 json=data,
                                 headers=HEADERS
                             )
                             
-                            if response.status_code == 201:
+                            if upload_response.status_code == 201:
                                 success_count += 1
+                            else:
+                                error_messages.append(
+                                    f"Failed to upload {file['name']}: {upload_response.text}"
+                                )
                                 
                         except Exception as e:
-                            st.error(f"Failed to copy {file['name']}: {str(e)}")
+                            error_messages.append(f"Error copying {file['name']}: {str(e)}")
                         
                         progress_bar.progress((i+1)/total)
                     
+                    # Show results
                     st.success(f"Successfully copied {success_count}/{total} files")
+                    if error_messages:
+                        st.error("## Errors encountered:")
+                        for err in error_messages:
+                            st.error(err)
+                    
+                    # Force refresh
+                    st.cache_data.clear()
                     st.rerun()
 
 
