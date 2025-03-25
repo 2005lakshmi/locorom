@@ -22,10 +22,7 @@ def get_github_files(path):
         return []
     return response.json()
 
-def get_github_files(path):
-    url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{path}"
-    response = requests.get(url, headers=HEADERS)
-    return response.json() if response.status_code == 200 else []
+
 
 def create_room_folder(room_name):
     folder_path = f"{BASE_PATH}/{room_name}"
