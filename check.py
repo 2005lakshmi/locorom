@@ -13,6 +13,15 @@ BASE_PATH = "Rooms"
 HEADERS = {"Authorization": f"token {GITHUB_TOKEN}"}
 
 # Helper functions
+# Add this to the get_github_files function
+def get_github_files(path):
+    url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{path}"
+    response = requests.get(url, headers=HEADERS)
+    if response.status_code != 200:
+        st.error(f"API Error ({response.status_code}): {response.text}")
+        return []
+    return response.json()
+
 def get_github_files(path):
     url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{path}"
     response = requests.get(url, headers=HEADERS)
