@@ -953,7 +953,7 @@ def admin_page():
                         st.error(f"Preview failed: {str(e)}")
                     
                     # File selection checkbox
-                    if st.checkbox(f"Select {file['name']", 
+                    if st.checkbox(f"Select {file['name']}", 
                                   key=f"copy_{file['name']}_{idx}"):
                         selected_files.append(file)
     
