@@ -999,7 +999,8 @@ def admin_page():
                         container.error(f"Preview failed: {str(e)}")
                     
                     # Checkbox with safe key
-                    if container.checkbox(f"Copy {file['name']", 
+                    
+                    if container.checkbox(f"Copy {file['name']}",  # Added closing }
                                          key=f"copy_{source_room}_{source_sub}_{file['name']}_{idx}"):
                         selected_files.append(file)
     
