@@ -606,7 +606,7 @@ def update_subfolder_thumbnail(room_name, subfolder_name, new_thumbnail):
 # Admin Page
 def admin_page():
     st.title("Admin Panel")
-    tab1, tab2, tab3, tab4, tab5 , tab6= st.tabs(["Create Room", "Add Content", "Manage Subfolders", "Manage Files", "🚮 Delete Rooms","📷 Change Subfolder Thumbnail"])
+    tab1, tab2, tab3, tab4, tab5 , tab6, tab7 = st.tabs(["Create Room", "Add Content", "Manage Subfolders", "Manage Files", "🚮 Delete Rooms","📷 Change Subfolder Thumbnail","📥 Copy Files"])
 
 
     # Create Room Tab (Tab1)
@@ -898,7 +898,88 @@ def admin_page():
                     else:
                         st.error("Failed to update thumbnail")
 
-
+    with tab7:
+        st.header("📥 Copy Files Between Rooms")
+        
+        # Get list of all rooms
+        all_rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            source_room = st.selectbox("Source Room", all_rooms, key="copy_source")
+        with col2:
+            dest_room = st.selectbox("Destination Room", all_rooms, key="copy_dest")
+    
+        # Get files from source room (main area only)
+        source_files = get_github_files(f"{BASE_PATH}/{source_room}")
+        source_files = [f for f in source_files 
+                       if f['type'] == 'file' 
+                       and f['name'] not in ['info.txt', 'thumbnail.jpg']
+                       and f['name'].split('.')[-1].lower() in ['jpg', 'jpeg', 'png', 'gif', 'mp4']]
+    
+        if not source_files:
+            st.info("No files available to copy in source room")
+        else:
+            st.subheader("Select Files to Copy")
+            
+            # Create checkboxes for selection
+            selected_files = []
+            cols = st.columns(4)
+            for idx, file in enumerate(source_files):
+                with cols[idx % 4]:
+                    # Display thumbnail preview
+                    ext = file['name'].split('.')[-1].lower()
+                    if ext in ['jpg', 'jpeg', 'png', 'gif']:
+                        st.image(file['download_url'], width=100)
+                    else:
+                        st.video(file['download_url'])
+                    
+                    # Checkbox with filename
+                    if st.checkbox(file['name'], key=f"copy_{file['name']}"):
+                        selected_files.append(file)
+    
+            if selected_files and st.button("Copy Selected Files"):
+                progress_bar = st.progress(0)
+                total_files = len(selected_files)
+                success_count = 0
+                
+                for i, file in enumerate(selected_files):
+                    try:
+                        # Get file content
+                        response = requests.get(file['download_url'])
+                        if response.status_code != 200:
+                            continue
+                            
+                        # Get next available name in destination
+                        dest_files = get_github_files(f"{BASE_PATH}/{dest_room}")
+                        next_name = next_alphabetical_filename(dest_files)
+                        ext = file['name'].split('.')[-1].lower()
+                        
+                        # Upload to destination
+                        file_path = f"{BASE_PATH}/{dest_room}/{next_name}.{ext}"
+                        content = base64.b64encode(response.content).decode()
+                        
+                        data = {
+                            "message": f"Copied {file['name']} from {source_room}",
+                            "content": content
+                        }
+                        
+                        response = requests.put(
+                            f"https://api.github.com/repos/{GITHUB_REPO}/contents/{file_path}",
+                            json=data,
+                            headers=HEADERS
+                        )
+                        
+                        if response.status_code == 201:
+                            success_count += 1
+                        
+                    except Exception as e:
+                        st.error(f"Failed to copy {file['name']}: {str(e)}")
+                    
+                    progress_bar.progress((i+1)/total_files)
+                
+                st.success(f"Copied {success_count}/{total_files} files successfully!")
+                st.rerun()
 
 
 
