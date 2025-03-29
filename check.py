@@ -631,6 +631,7 @@ def admin_page():
     if 'upload_counter' not in st.session_state:
         st.session_state.upload_counter = 0
     
+# In the "Add Content" tab (tab2) of admin_page():
     with tab2:
         st.header("📤 Add Content")
         search_term = st.text_input("Search rooms by name", key="content_search").lower()
@@ -641,7 +642,7 @@ def admin_page():
         if not filtered_rooms:
             st.info("No rooms found matching your search")
             return
-
+    
         for room in filtered_rooms:
             with st.expander(f"Room: **{room}**", expanded=False):
                 subfolders = get_subfolders(room)
@@ -651,24 +652,31 @@ def admin_page():
                     key=f"sub_{room}"
                 )
                 
-                uploaded_file = st.file_uploader(
-                    "Choose file",
+                # Modified file uploader to accept multiple files
+                uploaded_files = st.file_uploader(
+                    "Choose files (multiple allowed)",
                     type=['jpg', 'jpeg', 'png', 'gif', 'mp4'],
-                    key=f"upload_{room}_{st.session_state.upload_counter}"
+                    key=f"upload_{room}_{st.session_state.upload_counter}",
+                    accept_multiple_files=True  # Enable multiple selection
                 )
                 
-                if uploaded_file:
-                    success = upload_room_file(
-                        room=room,
-                        uploaded_file=uploaded_file,
-                        file_type=uploaded_file.type,
-                        subfolder=selected_sub if selected_sub != "Main" else None
-                    )
-                    if success:
-                        st.success("file uploaded")
-                        # Safe counter increment
-                        st.session_state.upload_counter += 1
-                        st.rerun()
+                if uploaded_files:
+                    # Process files in selection order
+                    for idx, uploaded_file in enumerate(uploaded_files, 1):
+                        success = upload_room_file(
+                            room=room,
+                            uploaded_file=uploaded_file,
+                            file_type=uploaded_file.type,
+                            subfolder=selected_sub if selected_sub != "Main" else None
+                        )
+                        if success:
+                            st.success(f"Uploaded ({idx}/{len(uploaded_files)}) {uploaded_file.name}")
+                        else:
+                            st.error(f"Failed to upload {uploaded_file.name}")
+                    
+                    # Refresh after all uploads complete
+                    st.session_state.upload_counter += 1
+                    st.rerun()
 
 
     with tab3:
