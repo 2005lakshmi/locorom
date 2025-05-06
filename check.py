@@ -962,8 +962,7 @@ def default_page():
     </div>
     """, unsafe_allow_html=True)
 
-    check_rate_limit()
-
+    
 
 
     
@@ -971,7 +970,8 @@ def default_page():
 
     # Search for rooms
     search_term = st.text_input("**Search Room**", "", placeholder="example., 415B").strip().lower()
-    
+    check_rate_limit()
+
     # Check for admin password
     if search_term == st.secrets["general"]["password"]:
         st.session_state.page = "Admin Page"
