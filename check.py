@@ -909,15 +909,6 @@ def admin_page():
                     else:
                         st.error("Failed to update thumbnail")
 
-def check_rate_limit():
-    response = requests.get("https://api.github.com/rate_limit", headers=HEADERS)
-    if response.status_code == 200:
-        limits = response.json()
-        st.write("GitHub Rate Limits:", limits)
-    else:
-        st.error("Failed to check rate limits")
-
-# Add this to your admin page temporarily
 
 
 
@@ -970,8 +961,7 @@ def default_page():
 
     # Search for rooms
     search_term = st.text_input("**Search Room**", "", placeholder="example., 415B").strip().lower()
-    check_rate_limit()
-
+    
     # Check for admin password
     if search_term == st.secrets["general"]["password"]:
         st.session_state.page = "Admin Page"
