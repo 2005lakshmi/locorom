@@ -911,57 +911,9 @@ def admin_page():
 
 
 
-# Add this temporary code to verify token works
-def verify_token():
-    headers = {"Authorization": f"token {st.secrets.github.token}"}
-    
-    # Check token validity
-    user_response = requests.get("https://api.github.com/user", headers=headers)
-    
-    if user_response.status_code == 200:
-        # Get rate limits
-        limit_response = requests.get("https://api.github.com/rate_limit", headers=headers)
-        rate_data = limit_response.json() if limit_response.status_code == 200 else {}
-        
-        # Display verification status
-        st.success("✅ Token is valid!")
-        
-        # Show raw rate limit data
-        with st.expander("Raw Rate Limit Data", expanded=False):
-            st.json(rate_data)
-        
-        # Display formatted core limits
-        if 'resources' in rate_data and 'core' in rate_data['resources']:
-            core = rate_data['resources']['core']
-            reset_time = datetime.fromtimestamp(core['reset']).strftime('%Y-%m-%d %H:%M:%S')
-            
-            st.markdown(f"""
-            ### Core API Limits
-            | Metric       | Value          |
-            |--------------|----------------|
-            | Limit        | {core['limit']} requests |
-            | Remaining    | {core['remaining']} requests |
-            | Reset Time   | {reset_time} |
-            """)
-            
-            # Calculate time until reset
-            reset_in = core['reset'] - int(time.time())
-            st.write(f"⏳ Resets in: {timedelta(seconds=reset_in)}")
-            
-        else:
-            st.warning("Could not retrieve rate limit details")
-            
-    elif user_response.status_code == 403:
-        st.error("❌ Rate limit exceeded!")
-    else:
-        st.error(f"❌ Invalid token (HTTP {user_response.status_code})")
-
-    # Add manual refresh
-    if st.button("🔄 Refresh Rate Limits"):
-        st.rerun()
 
 def default_page():
-    verify_token()
+    
     #st.markdown("""<h1>🔍 Room <span style="color: green;font-size: 15px;">[MITM]</span></h1>""", unsafe_allow_html=True)
     st.markdown("""
     <style>
