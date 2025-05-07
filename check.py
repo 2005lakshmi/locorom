@@ -911,10 +911,18 @@ def admin_page():
 
 
 
-
+# Add this temporary code to verify token works
+def verify_token():
+    headers = {"Authorization": f"token {st.secrets.github.token}"}
+    response = requests.get("https://api.github.com/user", headers=headers)
+    if response.status_code == 200:
+        st.success("✅ Token is valid!")
+    else:
+        st.error("❌ Invalid token")
 
 
 def default_page():
+    verify_token()
     #st.markdown("""<h1>🔍 Room <span style="color: green;font-size: 15px;">[MITM]</span></h1>""", unsafe_allow_html=True)
     st.markdown("""
     <style>
