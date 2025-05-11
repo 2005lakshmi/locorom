@@ -2,30 +2,20 @@ import streamlit as st
 from pathlib import Path
 import streamlit.components.v1 as components
 
-# --- Configuration ---
 BASE_PATH = Path("Rooms")  # Local path to the 'Rooms' folder
 
-# --- Helper Functions ---
-
-def get_room_list():
-    """List all room directories inside Rooms/."""
-    return sorted([f.name for f in BASE_PATH.iterdir() if f.is_dir()])
+def list_media_files(path):
+    return [f for f in path.iterdir()
+            if f.is_file() and f.name not in ["info.txt", "thumbnail.jpg"]
+            and f.suffix.lower() in [".jpg", ".jpeg", ".png", ".gif", ".mp4"]]
 
 def get_info_content(path):
-    """Read info.txt content if it exists."""
     info_file = path / "info.txt"
     if info_file.exists():
         return info_file.read_text()
     return "No information available"
 
-def list_media_files(path):
-    """List image/video files (excluding info.txt and thumbnail.jpg)."""
-    return [f for f in path.iterdir()
-            if f.is_file() and f.name not in ["info.txt", "thumbnail.jpg"]
-            and f.suffix.lower() in [".jpg", ".jpeg", ".png", ".gif", ".mp4"]]
-
 def display_carousel(files):
-    """Display images/videos as a Swiper.js carousel."""
     carousel_items = ""
     for file in files:
         ext = file.suffix.lower()
@@ -74,16 +64,14 @@ def display_carousel(files):
     """
     components.html(carousel_html, height=500)
 
-def display_room(room_name):
-    room_path = BASE_PATH / room_name
+def display_main_content(selected_room):
+    room_path = BASE_PATH / selected_room
     info_content = get_info_content(room_path)
     main_media = list_media_files(room_path)
 
-    # Main area
     st.markdown(f"<h4 style='color: green;'>From Point:</h4>", unsafe_allow_html=True)
     col1, col2 = st.columns([2, 3])
     with col1:
-        # Show first image if available
         if main_media:
             st.image(main_media[0], width=200)
     with col2:
@@ -120,14 +108,52 @@ def display_room(room_name):
 
 # --- Streamlit Page ---
 st.set_page_config(page_title="Rooms Explorer", page_icon=":door:")
-st.title("Rooms Explorer")
+
+st.markdown("""
+<style>
+    .logo-container {
+        display: flex;
+        align-items: center;
+    }
+    .logo {
+        width: 83px;
+        height: 83px;
+        background-color: white;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-right: 10px;
+    }
+    .logo img {
+        width: 68px;
+        height: 68px;
+    }
+    .room-title {
+        font-size: 24px;
+        font-weight: bold;
+    }
+    .room-code {
+        color: green;
+        font-size: 15px;
+    }
+</style>
+<div class="logo-container">
+    <h1 class="room-title">🔍 Room <span class="room-code">[MITM]</span></h1>
+    <div class="logo">
+        <img src="https://raw.githubusercontent.com/2005lakshmi/locorom/main/logo_locorom.png" alt="Logo">
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+st.markdown("<hr style='border: 1px solid gray; margin: 5px 0;'>", unsafe_allow_html=True)
 
 if not BASE_PATH.exists():
     st.error("Rooms folder not found. Please clone the repo locally.")
 else:
-    # List all rooms
+    # Search for rooms
+    search_term = st.text_input("**Search Room**", "", placeholder="example., 415B").strip().lower()
+    # Get filtered rooms (local only)
     rooms = [f.name for f in BASE_PATH.iterdir() if f.is_dir()]
-    search_term = st.text_input("Search Room Number (or Name)").strip().lower()
     filtered_rooms = [room for room in rooms if search_term in room.lower()] if search_term else []
 
     if not filtered_rooms:
@@ -135,4 +161,5 @@ else:
     else:
         selected_room = st.radio("Select Room", filtered_rooms)
         st.markdown("<hr style='border: 1px solid gray; margin: 0px 0;'>", unsafe_allow_html=True)
-        display_room(selected_room)
+        st.header(f"Room: :red[{selected_room}]")
+        display_main_content(selected_room)
