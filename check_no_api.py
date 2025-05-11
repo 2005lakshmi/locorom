@@ -15,56 +15,16 @@ def get_info_content(path):
         return info_file.read_text()
     return "No information available"
 
-def display_carousel(files):
-    carousel_items = ""
-    for file in files:
-        ext = file.suffix.lower()
-        file_url = file.resolve().as_uri()
-
-        if ext == ".mp4":
-            media_html = f"""
-                <video controls style="max-height: 400px; width: 100%;">
-                    <source src="{file_url}" type="video/mp4">
-                </video>
-            """
-        else:
-            media_html = f'''
-            <img src="{file_url}" 
-                 style="max-height: 400px; width: 100%; object-fit: contain;">
-            '''
-        carousel_items += f'<div class="swiper-slide">{media_html}</div>'
-
-    if not carousel_items:
+def display_local_carousel(files):
+    if not files:
         st.info("No media files available.")
         return
-
-    carousel_html = f"""
-    <link rel="stylesheet" href="https://unpkg.com/swiper@8/swiper-bundle.min.css">
-    <div class="swiper mySwiper">
-        <div class="swiper-wrapper">
-            {carousel_items}
-        </div>
-        <div class="swiper-pagination"></div>
-        <div class="swiper-button-next"></div>
-        <div class="swiper-button-prev"></div>
-    </div>
-    <script src="https://unpkg.com/swiper@8/swiper-bundle.min.js"></script>
-    <script>
-        const swiper = new Swiper('.mySwiper', {{
-            loop: true,
-            pagination: {{
-                el: '.swiper-pagination',
-                type: 'fraction',
-            }},
-            navigation: {{
-                nextEl: '.swiper-button-next',
-                prevEl: '.swiper-button-prev',
-            }},
-        }});
-    </script>
-    """
-    components.html(carousel_html, height=500)
-
+    idx = st.slider("Photo", 0, len(files) - 1, 0, format="%d")
+    file = files[idx]
+    if file.suffix.lower() == ".mp4":
+        st.video(str(file))
+    else:
+        st.image(str(file), use_column_width=True)
 def display_main_content(selected_room):
     room_path = BASE_PATH / selected_room
     info_content = get_info_content(room_path)
