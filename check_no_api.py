@@ -2,29 +2,23 @@ import streamlit as st
 from pathlib import Path
 import streamlit.components.v1 as components
 
-BASE_PATH = Path("Rooms")  # Local path to the 'Rooms' folder
+BASE_PATH = Path("Rooms")
 
 def list_media_files(path):
-    return [f for f in path.iterdir()
+    return [str(f) for f in path.iterdir()
             if f.is_file() and f.name not in ["info.txt", "thumbnail.jpg"]
-            and f.suffix.lower() in [".jpg", ".jpeg", ".png", ".gif", ".mp4"]]
+            and f.suffix.lower() in [".jpg", ".jpeg", ".png", ".gif"]]
 
-def get_info_content(path):
-    info_file = path / "info.txt"
-    if info_file.exists():
-        return info_file.read_text()
-    return "No information available"
-
-def display_local_carousel(files):
-    if not files:
-        st.info("No media files available.")
-        return
-    idx = st.slider("Photo", 0, len(files) - 1, 0, format="%d")
-    file = files[idx]
-    if file.suffix.lower() == ".mp4":
-        st.video(str(file))
+def display_main_content(selected_room):
+    room_path = BASE_PATH / selected_room
+    images = list_media_files(room_path)
+    if images:
+        items = [{"img": img, "title": "", "text": ""} for img in images]
+        carousel(items=items)
     else:
-        st.image(str(file), use_column_width=True)
+        st.info("No images found.")
+
+
 def display_main_content(selected_room):
     room_path = BASE_PATH / selected_room
     info_content = get_info_content(room_path)
