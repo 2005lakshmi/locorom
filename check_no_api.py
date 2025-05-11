@@ -19,7 +19,8 @@ def display_carousel(files):
     carousel_items = ""
     for file in files:
         ext = file.suffix.lower()
-        file_url = file.as_uri()
+        file_url = file.resolve().as_uri()
+
         if ext == ".mp4":
             media_html = f"""
                 <video controls style="max-height: 400px; width: 100%;">
