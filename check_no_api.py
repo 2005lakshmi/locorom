@@ -78,7 +78,7 @@ def display_carousel(files, raw_base_url):
     """
     st.components.v1.html(carousel_html, height=500)
 
-def display_main_content(room_name):
+def display_room(room_name):
     room_path = BASE_PATH / room_name
     info_content = get_info_content(room_path)
     main_media = list_media_files(room_path)
@@ -130,6 +130,13 @@ else:
     if not rooms:
         st.info("No rooms found.")
     else:
-        selected_room = st.selectbox("Select a Room", rooms)
-        if selected_room:
-            display_main_content(selected_room)
+        st.markdown("### Select Rooms to View")
+        checked_rooms = []
+        for room in rooms:
+            if st.checkbox(room, key=room):
+                checked_rooms.append(room)
+        if not checked_rooms:
+            st.info("Select at least one room to display its contents.")
+        for room in checked_rooms:
+            st.markdown("---")
+            display_room(room)
