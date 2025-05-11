@@ -1,59 +1,59 @@
+import os
 import streamlit as st
-import requests
+from pathlib import Path
 import streamlit.components.v1 as components
 import string
 
 # Configuration
-GITHUB_REPO = "2005lakshmi/locorom"
-BASE_PATH = "Rooms"
-BRANCH = "main"
+BASE_PATH = Path("Rooms")
 
-def get_raw_url(*path_parts):
-    """Construct raw GitHub URL for a file"""
-    return f"https://raw.githubusercontent.com/{GITHUB_REPO}/{BRANCH}/{'/'.join(path_parts)}"
+# Helper functions
 
-def get_room_info(room_name):
-    """Fetch room information from info.txt"""
-    info_url = get_raw_url(BASE_PATH, room_name, "info.txt")
-    response = requests.get(info_url)
-    return response.text if response.status_code == 200 else "No information available"
-
-def generate_alphabetical_files(room_name, subfolder=None):
-    """Generate possible alphabetical filenames and check existence"""
-    base_path = [BASE_PATH, room_name]
-    if subfolder:
-        base_path.append(subfolder)
-    
-    files = []
-    sequence = ['']  # Start with empty to generate a, b,...z, aa, etc.
-    
-    while True:
-        current = sequence.pop(0)
-        for letter in string.ascii_lowercase:
-            candidate = current + letter
-            for ext in ['jpg', 'jpeg', 'png', 'gif', 'mp4']:
-                url = get_raw_url(*base_path, f"{candidate}.{ext}")
-                if requests.head(url).status_code == 200:
-                    files.append(url)
-            sequence.append(candidate)
-        if len(current) > 1:  # Limit depth for practical purposes
-            break
-    return files
+def get_local_files(path):
+    """Return a list of dicts for files and folders in the given local path."""
+    p = Path(path)
+    if not p.exists():
+        return []
+    items = []
+    for f in p.iterdir():
+        if f.is_file():
+            items.append({'type': 'file', 'name': f.name, 'path': str(f), 'object': f})
+        elif f.is_dir():
+            items.append({'type': 'dir', 'name': f.name, 'path': str(f), 'object': f})
+    return items
 
 def get_subfolders(room_name):
-    """Detect subfolders by checking for thumbnail.jpg"""
-    subfolders = []
-    for char in string.ascii_lowercase:  # Simple alphabetical subfolder detection
-        thumb_url = get_raw_url(BASE_PATH, room_name, char, "thumbnail.jpg")
-        if requests.head(thumb_url).status_code == 200:
-            subfolders.append(char)
-    return subfolders
+    """Return subfolder names for a room."""
+    items = get_local_files(BASE_PATH / room_name)
+    return [item['name'] for item in items if item['type'] == 'dir']
 
-def display_carousel(files, zoom=True):
-    """Display media files in a carousel matching original styling"""
+def get_room_info(room_name):
+    """Get room information from info.txt"""
+    info_path = BASE_PATH / room_name / "info.txt"
+    if info_path.exists():
+        return info_path.read_text()
+    return "No information available"
+
+def get_subfolder_info(room_name, subfolder):
+    info_path = BASE_PATH / room_name / subfolder / "info.txt"
+    if info_path.exists():
+        return info_path.read_text()
+    return ""
+
+def list_media_files(path):
+    """List image/video files (excluding info.txt and thumbnail.jpg)."""
+    p = Path(path)
+    return [f for f in p.iterdir()
+            if f.is_file() and f.name not in ["info.txt", "thumbnail.jpg"]
+            and f.suffix.lower() in [".jpg", ".jpeg", ".png", ".gif", ".mp4"]]
+
+def display_carousel(files, zoom=False):
+    """Display media files in a carousel with zoom capability"""
     carousel_items = ""
-    for file_url in files:
-        if file_url.split('.')[-1].lower() in ['mp4', 'webm']:
+    for file in files:
+        ext = file.suffix.lower()
+        file_url = file.as_uri()
+        if ext == ".mp4":
             media_html = f"""
                 <video controls style="max-height: 400px; width: 100%;">
                     <source src="{file_url}" type="video/mp4">
@@ -113,6 +113,11 @@ def display_carousel(files, zoom=True):
         .swiper-slide-zoomed .swiper-zoom-container {{
             cursor: move;
         }}
+        @media screen and (max-width: 600px) {{
+            .swiper-slide img, .swiper-slide video {{
+                max-height: 300px;
+            }}
+        }}
     </style>
     
     <div class="swiper mySwiper">
@@ -143,95 +148,64 @@ def display_carousel(files, zoom=True):
     components.html(carousel_html, height=500)
 
 def display_main_content(room_name):
-    """Display room content matching original layout"""
-    # Main area
-    main_files = generate_alphabetical_files(room_name)
+    """Display main content for a room with subfolders"""
     info_content = get_room_info(room_name)
-    
-    if main_files:
+    main_media = list_media_files(BASE_PATH / room_name)
+
+    # Show thumbnail and info in row
+    if main_media:
         st.markdown("<h4 style='color: green;'>From Point:</h4>", unsafe_allow_html=True)
         col1, col2 = st.columns([2, 3])
         with col1:
-            st.image(main_files[0], width=200)
+            st.image(main_media[0], width=200)
         with col2:
             st.markdown("<h5 style='color:#0D92F4;'>Location Info :</h5>", unsafe_allow_html=True)
             st.markdown(f"###### {info_content}")
-        
-        st.markdown("##### Photos")
+
+        st.markdown("##### Photos ")
         st.write("Path through Photos")
-        display_carousel(main_files, zoom=True)
+        display_carousel(main_media, zoom=True)
         st.markdown("<hr style='border: 1px solid gray; margin: 0px 0;'>", unsafe_allow_html=True)
 
-    # Subfolders
-    for sub in get_subfolders(room_name):
+    # Subfolders Section
+    subfolders = get_subfolders(room_name)
+    for sub in subfolders:
         st.markdown("<h4 style='color: green;'>From Point:</h4>", unsafe_allow_html=True)
+        sub_path = BASE_PATH / room_name / sub
+        sub_media = list_media_files(sub_path)
         col1, col2 = st.columns([2, 3])
         with col1:
-            thumb_url = get_raw_url(BASE_PATH, room_name, sub, "thumbnail.jpg")
-            st.image(thumb_url, width=200)
+            thumb_file = sub_path / "thumbnail.jpg"
+            if thumb_file.exists():
+                st.image(thumb_file, width=200)
+            else:
+                st.info("No thumbnail.jpg found")
         with col2:
-            sub_info = requests.get(get_raw_url(BASE_PATH, room_name, sub, "info.txt")).text
+            sub_info = get_subfolder_info(room_name, sub)
             st.markdown("<h5 style='color:#0D92F4;'>Location Info :</h5>", unsafe_allow_html=True)
             st.markdown(f"###### {sub_info}")
-        
-        sub_files = generate_alphabetical_files(room_name, sub)
-        if sub_files:
+
+        if sub_media:
             st.markdown("##### Photos")
-            display_carousel(sub_files, zoom=True)
+            display_carousel(sub_media, zoom=True)
         else:
             st.info(f"No media available in {sub}")
         st.markdown("<hr style='border: 1px solid gray; margin: 0px 0;'>", unsafe_allow_html=True)
 
-# Streamlit UI
-st.markdown("""
-    <style>
-        .logo-container {
-            display: flex;
-            align-items: center;
-        }
-        .logo {
-            width: 83px;
-            height: 83px;
-            background-color: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-right: 10px;
-        }
-        .logo img {
-            width: 68px;
-            height: 68px;
-        }
-        .room-title {
-            font-size: 24px;
-            font-weight: bold;
-        }
-        .room-code {
-            color: green;
-            font-size: 15px;
-        }
-    </style>
+# --- Streamlit Page ---
+st.set_page_config(page_title="Rooms Explorer", page_icon=":door:")
+st.title("Rooms Explorer")
 
-    <div class="logo-container">
-        <h1 class="room-title">🔍 Room <span class="room-code">[MITM]</span></h1>
-        <div class="logo">
-            <img src="https://raw.githubusercontent.com/2005lakshmi/locorom/main/logo_locorom.png" alt="Logo">
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-st.markdown("<hr style='border: 1px solid gray; margin: 5px 0;'>", unsafe_allow_html=True)
-
-# Room search
-search_term = st.text_input("**Search Room**", "", placeholder="example., 415B").strip().lower()
-
-if search_term:
-    # Verify room exists
-    info_url = get_raw_url(BASE_PATH, search_term, "info.txt")
-    if requests.head(info_url).status_code == 200:
-        st.markdown(f"## Room: :red[{search_term}]")
-        display_main_content(search_term)
-    else:
-        st.error("Room not found")
+if not BASE_PATH.exists():
+    st.error("Rooms folder not found. Please clone the repo locally.")
 else:
-    st.info("Please enter room number to search...")
+    # List all rooms
+    rooms = [f.name for f in BASE_PATH.iterdir() if f.is_dir()]
+    search = st.text_input("Search Rooms")
+    if search:
+        rooms = [r for r in rooms if search.lower() in r.lower()]
+    if not rooms:
+        st.info("No rooms found.")
+    else:
+        selected_room = st.radio("Select a room", rooms)
+        display_main_content(selected_room)
