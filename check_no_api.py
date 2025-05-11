@@ -1,20 +1,56 @@
 import streamlit as st
-import base64
 import requests
 import streamlit.components.v1 as components
+import string
 
 # Configuration
 GITHUB_REPO = "2005lakshmi/locorom"
 BASE_PATH = "Rooms"
+BRANCH = "main"
+
+def get_raw_url(*path_parts):
+    """Construct raw GitHub URL for a file"""
+    return f"https://raw.githubusercontent.com/{GITHUB_REPO}/{BRANCH}/{'/'.join(path_parts)}"
 
 def get_room_info(room_name):
-    """Fetch room info directly from GitHub raw URL"""
-    info_url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/main/{BASE_PATH}/{room_name}/info.txt"
+    """Fetch room information from info.txt"""
+    info_url = get_raw_url(BASE_PATH, room_name, "info.txt")
     response = requests.get(info_url)
     return response.text if response.status_code == 200 else "No information available"
 
-def display_carousel(files):
-    """Display media files in a carousel with zoom capability"""
+def generate_alphabetical_files(room_name, subfolder=None):
+    """Generate possible alphabetical filenames and check existence"""
+    base_path = [BASE_PATH, room_name]
+    if subfolder:
+        base_path.append(subfolder)
+    
+    files = []
+    sequence = ['']  # Start with empty to generate a, b,...z, aa, etc.
+    
+    while True:
+        current = sequence.pop(0)
+        for letter in string.ascii_lowercase:
+            candidate = current + letter
+            for ext in ['jpg', 'jpeg', 'png', 'gif', 'mp4']:
+                url = get_raw_url(*base_path, f"{candidate}.{ext}")
+                if requests.head(url).status_code == 200:
+                    files.append(url)
+            sequence.append(candidate)
+        if len(current) > 1:  # Limit depth for practical purposes
+            break
+    return files
+
+def get_subfolders(room_name):
+    """Detect subfolders by checking for thumbnail.jpg"""
+    subfolders = []
+    for char in string.ascii_lowercase:  # Simple alphabetical subfolder detection
+        thumb_url = get_raw_url(BASE_PATH, room_name, char, "thumbnail.jpg")
+        if requests.head(thumb_url).status_code == 200:
+            subfolders.append(char)
+    return subfolders
+
+def display_carousel(files, zoom=True):
+    """Display media files in a carousel matching original styling"""
     carousel_items = ""
     for file_url in files:
         if file_url.split('.')[-1].lower() in ['mp4', 'webm']:
@@ -24,12 +60,16 @@ def display_carousel(files):
                 </video>
             """
         else:
-            media_html = f'<img src="{file_url}" style="max-height: 400px; width: 100%; object-fit: contain;">'
-        
+            zoom_class = "swiper-zoom-container" if zoom else ""
+            media_html = f'''
+            <div class="{zoom_class}">
+                <img src="{file_url}" 
+                     style="max-height: 400px; width: 100%; object-fit: contain;">
+            </div>
+            '''
         carousel_items += f'<div class="swiper-slide">{media_html}</div>'
 
     carousel_html = f"""
-    <!-- Swiper CSS -->
     <link rel="stylesheet" href="https://unpkg.com/swiper@8/swiper-bundle.min.css">
     <style>
         .swiper {{
@@ -47,6 +87,7 @@ def display_carousel(files):
             width: 100%;
             border-radius: 10px;
             box-shadow: 0px 5px 15px rgba(0,0,0,0.2);
+            object-fit: contain;
         }}
         .swiper-pagination-fraction {{
             font-size: 18px;
@@ -56,13 +97,24 @@ def display_carousel(files):
         }}
         .swiper-button-next,
         .swiper-button-prev {{
-            color: white;
-            background: rgba(0,0,0,0.5);
-            padding: 20px;
+            width: 30px;
+            height: 30px;
+            background-color: rgba(0, 0, 0, 0.4);
             border-radius: 50%;
         }}
+        .swiper-button-next:after,
+        .swiper-button-prev:after {{
+            font-size: 20px;
+            color: white;
+        }}
+        .swiper-zoom-container {{
+            cursor: zoom-in;
+        }}
+        .swiper-slide-zoomed .swiper-zoom-container {{
+            cursor: move;
+        }}
     </style>
-
+    
     <div class="swiper mySwiper">
         <div class="swiper-wrapper">
             {carousel_items}
@@ -71,12 +123,12 @@ def display_carousel(files):
         <div class="swiper-button-next"></div>
         <div class="swiper-button-prev"></div>
     </div>
-
-    <!-- Swiper JS -->
+    
     <script src="https://unpkg.com/swiper@8/swiper-bundle.min.js"></script>
     <script>
-        new Swiper('.mySwiper', {{
+        const swiper = new Swiper('.mySwiper', {{
             loop: true,
+            zoom: {'true' if zoom else 'false'},
             pagination: {{
                 el: '.swiper-pagination',
                 type: 'fraction',
@@ -91,78 +143,95 @@ def display_carousel(files):
     components.html(carousel_html, height=500)
 
 def display_main_content(room_name):
-    """Display main content for a room with subfolders"""
-    # Get room info
+    """Display room content matching original layout"""
+    # Main area
+    main_files = generate_alphabetical_files(room_name)
     info_content = get_room_info(room_name)
     
-    # Main Area Section
-    main_media = []
-    # Generate possible media URLs (a-z then aa-zz)
-    for i in range(26):
-        letter = chr(97 + i)
-        main_media.append(f"https://raw.githubusercontent.com/{GITHUB_REPO}/main/{BASE_PATH}/{room_name}/{letter}.jpg")
-    
-    # Show thumbnail and info in row
-    st.markdown("<h4 style='color: green;'>From Point:</h4>", unsafe_allow_html=True)
-    col1, col2 = st.columns([2, 3])
-    with col1:
-        if main_media:
-            st.image(main_media[0], width=200)
-    with col2:
-        st.markdown(f"###### {info_content}")
-    
-    # Main Area Carousel
-    st.markdown("##### Photos")
-    st.write("Path through Photos")
-    display_carousel([url for url in main_media if requests.head(url).status_code == 200])
+    if main_files:
+        st.markdown("<h4 style='color: green;'>From Point:</h4>", unsafe_allow_html=True)
+        col1, col2 = st.columns([2, 3])
+        with col1:
+            st.image(main_files[0], width=200)
+        with col2:
+            st.markdown("<h5 style='color:#0D92F4;'>Location Info :</h5>", unsafe_allow_html=True)
+            st.markdown(f"###### {info_content}")
+        
+        st.markdown("##### Photos")
+        st.write("Path through Photos")
+        display_carousel(main_files, zoom=True)
+        st.markdown("<hr style='border: 1px solid gray; margin: 0px 0;'>", unsafe_allow_html=True)
 
-def default_page():
-    """User-facing interface without admin features"""
-    st.markdown("""
+    # Subfolders
+    for sub in get_subfolders(room_name):
+        st.markdown("<h4 style='color: green;'>From Point:</h4>", unsafe_allow_html=True)
+        col1, col2 = st.columns([2, 3])
+        with col1:
+            thumb_url = get_raw_url(BASE_PATH, room_name, sub, "thumbnail.jpg")
+            st.image(thumb_url, width=200)
+        with col2:
+            sub_info = requests.get(get_raw_url(BASE_PATH, room_name, sub, "info.txt")).text
+            st.markdown("<h5 style='color:#0D92F4;'>Location Info :</h5>", unsafe_allow_html=True)
+            st.markdown(f"###### {sub_info}")
+        
+        sub_files = generate_alphabetical_files(room_name, sub)
+        if sub_files:
+            st.markdown("##### Photos")
+            display_carousel(sub_files, zoom=True)
+        else:
+            st.info(f"No media available in {sub}")
+        st.markdown("<hr style='border: 1px solid gray; margin: 0px 0;'>", unsafe_allow_html=True)
+
+# Streamlit UI
+st.markdown("""
     <style>
-        .logo-container {{
+        .logo-container {
             display: flex;
             align-items: center;
-            margin-bottom: 20px;
-        }}
-        .logo {{
+        }
+        .logo {
             width: 83px;
             height: 83px;
-            margin-right: 15px;
-        }}
-        .room-title {{
+            background-color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 10px;
+        }
+        .logo img {
+            width: 68px;
+            height: 68px;
+        }
+        .room-title {
             font-size: 24px;
             font-weight: bold;
-        }}
-        .room-code {{
+        }
+        .room-code {
             color: green;
             font-size: 15px;
-        }}
+        }
     </style>
+
     <div class="logo-container">
         <h1 class="room-title">🔍 Room <span class="room-code">[MITM]</span></h1>
-        <img class="logo" src="https://raw.githubusercontent.com/2005lakshmi/locorom/main/logo_locorom.png">
+        <div class="logo">
+            <img src="https://raw.githubusercontent.com/2005lakshmi/locorom/main/logo_locorom.png" alt="Logo">
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("<hr style='border:1px solid gray;margin:5px 0'>", unsafe_allow_html=True)
+st.markdown("<hr style='border: 1px solid gray; margin: 5px 0;'>", unsafe_allow_html=True)
 
-    # Room search input
-    room_name = st.text_input("**Search Room**", "", placeholder="Enter exact room number (e.g. 415B)").strip()
+# Room search
+search_term = st.text_input("**Search Room**", "", placeholder="example., 415B").strip().lower()
 
-    if not room_name:
-        st.info("Please enter a room number to begin")
-        return
-
+if search_term:
     # Verify room exists
-    info_url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/main/{BASE_PATH}/{room_name}/info.txt"
-    if requests.head(info_url).status_code != 200:
+    info_url = get_raw_url(BASE_PATH, search_term, "info.txt")
+    if requests.head(info_url).status_code == 200:
+        st.markdown(f"## Room: :red[{search_term}]")
+        display_main_content(search_term)
+    else:
         st.error("Room not found")
-        return
-
-    # Display room content
-    st.markdown(f"## Room: :red[{room_name}]")
-    display_main_content(room_name)
-
-if __name__ == "__main__":
-    default_page()
+else:
+    st.info("Please enter room number to search...")
