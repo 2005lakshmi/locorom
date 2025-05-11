@@ -1,54 +1,68 @@
 import streamlit as st
-from pathlib import Path
+import base64
+import requests
+import streamlit.components.v1 as components
 
-# --- Configuration ---
+# Configuration
 GITHUB_REPO = "2005lakshmi/locorom"
-BRANCH = "main"
-BASE_PATH = Path("Rooms")  # Local path to the 'Rooms' folder
+BASE_PATH = "Rooms"
 
-def get_raw_url(*parts):
-    """Generate raw.githubusercontent.com URL for a file."""
-    path = "/".join(parts)
-    return f"https://raw.githubusercontent.com/{GITHUB_REPO}/{BRANCH}/{path}"
+def get_room_info(room_name):
+    """Fetch room info directly from GitHub raw URL"""
+    info_url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/main/{BASE_PATH}/{room_name}/info.txt"
+    response = requests.get(info_url)
+    return response.text if response.status_code == 200 else "No information available"
 
-def get_room_list():
-    return sorted([f.name for f in BASE_PATH.iterdir() if f.is_dir()])
-
-def get_info_content(path):
-    info_file = path / "info.txt"
-    if info_file.exists():
-        return info_file.read_text()
-    return "No information available"
-
-def list_media_files(path):
-    return [f for f in path.iterdir()
-            if f.is_file() and f.name not in ["info.txt", "thumbnail.jpg"]
-            and f.suffix.lower() in [".jpg", ".jpeg", ".png", ".gif", ".mp4"]]
-
-def display_carousel(files, raw_base_url):
+def display_carousel(files):
+    """Display media files in a carousel with zoom capability"""
     carousel_items = ""
-    for file in files:
-        ext = file.suffix.lower()
-        raw_url = f"{raw_base_url}/{file.name}"
-        if ext == ".mp4":
+    for file_url in files:
+        if file_url.split('.')[-1].lower() in ['mp4', 'webm']:
             media_html = f"""
                 <video controls style="max-height: 400px; width: 100%;">
-                    <source src="{raw_url}" type="video/mp4">
+                    <source src="{file_url}" type="video/mp4">
                 </video>
             """
         else:
-            media_html = f'''
-            <img src="{raw_url}" 
-                 style="max-height: 400px; width: 100%; object-fit: contain;">
-            '''
+            media_html = f'<img src="{file_url}" style="max-height: 400px; width: 100%; object-fit: contain;">'
+        
         carousel_items += f'<div class="swiper-slide">{media_html}</div>'
 
-    if not carousel_items:
-        st.info("No media files available.")
-        return
-
     carousel_html = f"""
+    <!-- Swiper CSS -->
     <link rel="stylesheet" href="https://unpkg.com/swiper@8/swiper-bundle.min.css">
+    <style>
+        .swiper {{
+            width: 100%;
+            height: auto;
+        }}
+        .swiper-slide {{
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }}
+        .swiper-slide img, .swiper-slide video {{
+            max-height: 400px;
+            width: 100%;
+            border-radius: 10px;
+            box-shadow: 0px 5px 15px rgba(0,0,0,0.2);
+        }}
+        .swiper-pagination-fraction {{
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }}
+        .swiper-button-next,
+        .swiper-button-prev {{
+            color: white;
+            background: rgba(0,0,0,0.5);
+            padding: 20px;
+            border-radius: 50%;
+        }}
+    </style>
+
     <div class="swiper mySwiper">
         <div class="swiper-wrapper">
             {carousel_items}
@@ -57,9 +71,11 @@ def display_carousel(files, raw_base_url):
         <div class="swiper-button-next"></div>
         <div class="swiper-button-prev"></div>
     </div>
+
+    <!-- Swiper JS -->
     <script src="https://unpkg.com/swiper@8/swiper-bundle.min.js"></script>
     <script>
-        const swiper = new Swiper('.mySwiper', {{
+        new Swiper('.mySwiper', {{
             loop: true,
             pagination: {{
                 el: '.swiper-pagination',
@@ -72,65 +88,81 @@ def display_carousel(files, raw_base_url):
         }});
     </script>
     """
-    st.components.v1.html(carousel_html, height=500)
+    components.html(carousel_html, height=500)
 
-def display_room(room_name):
-    room_path = BASE_PATH / room_name
-    info_content = get_info_content(room_path)
-    main_media = list_media_files(room_path)
-
-    # Main area
+def display_main_content(room_name):
+    """Display main content for a room with subfolders"""
+    # Get room info
+    info_content = get_room_info(room_name)
+    
+    # Main Area Section
+    main_media = []
+    # Generate possible media URLs (a-z then aa-zz)
+    for i in range(26):
+        letter = chr(97 + i)
+        main_media.append(f"https://raw.githubusercontent.com/{GITHUB_REPO}/main/{BASE_PATH}/{room_name}/{letter}.jpg")
+    
+    # Show thumbnail and info in row
     st.markdown("<h4 style='color: green;'>From Point:</h4>", unsafe_allow_html=True)
     col1, col2 = st.columns([2, 3])
     with col1:
         if main_media:
-            st.image(get_raw_url("Rooms", room_name, main_media[0].name), width=200)
+            st.image(main_media[0], width=200)
     with col2:
-        st.markdown("<h5 style='color:#0D92F4;'>Location Info :</h5>", unsafe_allow_html=True)
         st.markdown(f"###### {info_content}")
+    
+    # Main Area Carousel
+    st.markdown("##### Photos")
+    st.write("Path through Photos")
+    display_carousel([url for url in main_media if requests.head(url).status_code == 200])
 
-    if main_media:
-        st.markdown("##### Photos")
-        display_carousel(main_media, get_raw_url("Rooms", room_name))
-        st.markdown("<hr style='border: 1px solid gray; margin: 0px 0;'>", unsafe_allow_html=True)
+def default_page():
+    """User-facing interface without admin features"""
+    st.markdown("""
+    <style>
+        .logo-container {{
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }}
+        .logo {{
+            width: 83px;
+            height: 83px;
+            margin-right: 15px;
+        }}
+        .room-title {{
+            font-size: 24px;
+            font-weight: bold;
+        }}
+        .room-code {{
+            color: green;
+            font-size: 15px;
+        }}
+    </style>
+    <div class="logo-container">
+        <h1 class="room-title">🔍 Room <span class="room-code">[MITM]</span></h1>
+        <img class="logo" src="https://raw.githubusercontent.com/2005lakshmi/locorom/main/logo_locorom.png">
+    </div>
+    """, unsafe_allow_html=True)
 
-    # Subfolders
-    for sub in sorted([f for f in room_path.iterdir() if f.is_dir()]):
-        st.markdown("<h4 style='color: green;'>From Point:</h4>", unsafe_allow_html=True)
-        sub_info = get_info_content(sub)
-        col1, col2 = st.columns([2, 3])
-        with col1:
-            thumb_url = get_raw_url("Rooms", room_name, sub.name, "thumbnail.jpg")
-            st.image(thumb_url, width=200)
-        with col2:
-            st.markdown("<h5 style='color:#0D92F4;'>Location Info :</h5>", unsafe_allow_html=True)
-            st.markdown(f"###### {sub_info}")
+    st.markdown("<hr style='border:1px solid gray;margin:5px 0'>", unsafe_allow_html=True)
 
-        sub_media = list_media_files(sub)
-        if sub_media:
-            st.markdown("##### Photos")
-            display_carousel(sub_media, get_raw_url("Rooms", room_name, sub.name))
-        else:
-            st.info(f"No media available in {sub.name}")
-        st.markdown("<hr style='border: 1px solid gray; margin: 0px 0;'>", unsafe_allow_html=True)
+    # Room search input
+    room_name = st.text_input("**Search Room**", "", placeholder="Enter exact room number (e.g. 415B)").strip()
 
-# --- Streamlit Page ---
-st.title("Rooms Explorer")
+    if not room_name:
+        st.info("Please enter a room number to begin")
+        return
 
-if not BASE_PATH.exists():
-    st.error("Rooms folder not found. Please clone the repo locally.")
-else:
-    rooms = get_room_list()
-    if not rooms:
-        st.info("No rooms found.")
-    else:
-        st.markdown("### Select Rooms to View")
-        checked_rooms = []
-        for room in rooms:
-            if st.checkbox(room, key=room):
-                checked_rooms.append(room)
-        if not checked_rooms:
-            st.info("Select at least one room to display its contents.")
-        for room in checked_rooms:
-            st.markdown("---")
-            display_room(room)
+    # Verify room exists
+    info_url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/main/{BASE_PATH}/{room_name}/info.txt"
+    if requests.head(info_url).status_code != 200:
+        st.error("Room not found")
+        return
+
+    # Display room content
+    st.markdown(f"## Room: :red[{room_name}]")
+    display_main_content(room_name)
+
+if __name__ == "__main__":
+    default_page()
