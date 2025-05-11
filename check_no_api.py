@@ -12,24 +12,20 @@ def get_raw_url(*parts):
     return f"https://raw.githubusercontent.com/{GITHUB_REPO}/{BRANCH}/{path}"
 
 def get_room_list():
-    """List all room directories inside Rooms/."""
     return sorted([f.name for f in BASE_PATH.iterdir() if f.is_dir()])
 
 def get_info_content(path):
-    """Read info.txt content if it exists."""
     info_file = path / "info.txt"
     if info_file.exists():
         return info_file.read_text()
     return "No information available"
 
 def list_media_files(path):
-    """List image/video files (excluding info.txt and thumbnail.jpg)."""
     return [f for f in path.iterdir()
             if f.is_file() and f.name not in ["info.txt", "thumbnail.jpg"]
             and f.suffix.lower() in [".jpg", ".jpeg", ".png", ".gif", ".mp4"]]
 
 def display_carousel(files, raw_base_url):
-    """Display images/videos as a Swiper.js carousel."""
     carousel_items = ""
     for file in files:
         ext = file.suffix.lower()
@@ -84,10 +80,9 @@ def display_room(room_name):
     main_media = list_media_files(room_path)
 
     # Main area
-    st.markdown(f"<h4 style='color: green;'>From Point:</h4>", unsafe_allow_html=True)
+    st.markdown("<h4 style='color: green;'>From Point:</h4>", unsafe_allow_html=True)
     col1, col2 = st.columns([2, 3])
     with col1:
-        # Show first image if available
         if main_media:
             st.image(get_raw_url("Rooms", room_name, main_media[0].name), width=200)
     with col2:
@@ -99,7 +94,7 @@ def display_room(room_name):
         display_carousel(main_media, get_raw_url("Rooms", room_name))
         st.markdown("<hr style='border: 1px solid gray; margin: 0px 0;'>", unsafe_allow_html=True)
 
-    # Subfolders (access points)
+    # Subfolders
     for sub in sorted([f for f in room_path.iterdir() if f.is_dir()]):
         st.markdown("<h4 style='color: green;'>From Point:</h4>", unsafe_allow_html=True)
         sub_info = get_info_content(sub)
@@ -120,7 +115,6 @@ def display_room(room_name):
         st.markdown("<hr style='border: 1px solid gray; margin: 0px 0;'>", unsafe_allow_html=True)
 
 # --- Streamlit Page ---
-st.set_page_config(page_title="Rooms Explorer", page_icon=":door:")
 st.title("Rooms Explorer")
 
 if not BASE_PATH.exists():
