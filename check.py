@@ -7,86 +7,19 @@ import time
 import streamlit.components.v1 as components
 import string
 # Configuration
-GITHUB_TOKENS = st.secrets["github"]["tokens"]  # List of tokens in secrets.toml
-CURRENT_TOKEN_INDEX = 0
-
+GITHUB_TOKEN = st.secrets["github"]["token"]
 GITHUB_REPO = "2005lakshmi/locorom"
 BASE_PATH = "Rooms"
-#HEADERS = {"Authorization": f"token {GITHUB_TOKEN}"}
-HEADERS = {
-    "Authorization": f"token {st.secrets.github.tokens[st.session_state.current_token_index]}",
-    "Accept": "application/vnd.github+json"
-}
+HEADERS = {"Authorization": f"token {GITHUB_TOKEN}"}
 
-
-
-if 'current_token_index' not in st.session_state:
-    st.session_state.current_token_index = 0
-    active_token = select_active_token()
-    if not active_token:
-        st.error("All GitHub tokens exhausted!")
-        st.stop()
 # Helper functions
 # Add this to the get_github_files function
 
-def get_rate_limit(token):
-    """Get remaining requests for a token"""
-    try:
-        response = requests.get(
-            "https://api.github.com/rate_limit",
-            headers={"Authorization": f"token {token}"}
-        )
-        if response.status_code == 200:
-            return response.json()["resources"]["core"]["remaining"]
-        return 0
-    except:
-        return 0
-
-def select_active_token():
-    """Find first token with remaining quota"""
-    for idx, token in enumerate(GITHUB_TOKENS):
-        if get_rate_limit(token) > 10:  # Keep 10 as buffer
-            st.session_state.current_token_index = idx
-            return token
-    return None
-
-
-
-
 
 def get_github_files(path):
-    """Get files with automatic token rotation"""
-    global HEADERS
-    
-    for _ in range(len(GITHUB_TOKENS)):
-        url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{path}"
-        response = requests.get(url, headers=HEADERS)
-        
-        if response.status_code == 403:  # Rate limited
-            st.session_state.current_token_index = (
-                (st.session_state.current_token_index + 1) % len(GITHUB_TOKENS) )
-            HEADERS["Authorization"] = f"token {GITHUB_TOKENS[st.session_state.current_token_index]}"
-            continue
-            
-        return response.json() if response.status_code == 200 else []
-    
-    st.error("All tokens exhausted. Try again later.")
-    return []
-def token_status():
-    st.markdown("### GitHub Token Status")
-    remaining = get_rate_limit(GITHUB_TOKENS[st.session_state.current_token_index])
-    
-    cols = st.columns(3)
-    cols[0].metric("Current Token Index", st.session_state.current_token_index + 1)
-    cols[1].metric("Remaining Requests", remaining)
-    cols[2].metric("Total Tokens", len(GITHUB_TOKENS))
-    
-    if remaining < 100:
-        st.warning("Low remaining requests - consider rotating tokens")
-
-
-
-
+    url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{path}"
+    response = requests.get(url, headers=HEADERS)
+    return response.json() if response.status_code == 200 else []
 
 def create_room_folder(room_name):
     folder_path = f"{BASE_PATH}/{room_name}"
@@ -675,8 +608,6 @@ def update_subfolder_thumbnail(room_name, subfolder_name, new_thumbnail):
 
 # Admin Page
 def admin_page():
-    token_status()  # Add this at the top
-    
     st.title("Admin Panel")
     tab1, tab2, tab3, tab4, tab5 , tab6 = st.tabs(["Create Room", "Add Content", "Manage Subfolders", "Manage Files", "🚮 Delete Rooms","📷 Change Subfolder Thumbnail"])
 
