@@ -7,13 +7,61 @@ import time
 import streamlit.components.v1 as components
 import string
 # Configuration
-GITHUB_TOKEN = st.secrets["github"]["token"]
+GITHUB_TOKEN = st.secrets["github"]["tokens"]
 GITHUB_REPO = "2005lakshmi/locorom"
 BASE_PATH = "Rooms"
-HEADERS = {"Authorization": f"token {GITHUB_TOKEN}"}
+headers = get_headers(token)
+response = requests.get(url, headers=headers)
 
 # Helper functions
 # Add this to the get_github_files function
+
+
+TOKEN_INDEX_FILE = "token_indx.txt"
+
+def get_headers(token):
+    return {
+        "Authorization": f"token {token}",
+        "Accept": "application/vnd.github+json"
+        # add other headers as needed
+    }
+
+def get_current_token_index():
+    try:
+        with open(TOKEN_INDEX_FILE, "r") as f:
+            return int(f.read().strip())
+    except (FileNotFoundError, ValueError):
+        return 0
+
+def update_token_index(index):
+    with open(TOKEN_INDEX_FILE, "w") as f:
+        f.write(str(index % len(TOKENS)))
+
+def check_rate_limit(token):
+    headers = {"Authorization": f"token {token}"}
+    response = requests.get("https://api.github.com/rate_limit", headers=headers)
+    if response.status_code == 200:
+        return response.json()["resources"]["code_scanning_upload"]
+    return None
+
+def get_active_token():
+    current_index = get_current_token_index()
+    
+    for _ in range(len(TOKENS)):
+        token = TOKENS[current_index]
+        rate_limit = check_rate_limit(token)
+        
+        if rate_limit and rate_limit["remaining"] > 0:
+            return token, current_index, rate_limit["remaining"]
+        
+        current_index = (current_index + 1) % len(TOKENS)
+    
+    update_token_index(current_index)
+    return TOKENS[current_index], current_index, 0
+
+
+
+
 
 
 def get_github_files(path):
@@ -179,7 +227,13 @@ def next_alphabetical_filename(existing_files):
 
 def upload_room_file(room, uploaded_file, file_type, subfolder=None):
     """Upload file to room or subfolder with alphabetical filenames"""
+    
+    
     try:
+        token, index, remaining = get_active_token()
+        headers = get_headers(token)
+        # Use headers in your upload request
+        response = requests.post(upload_url, headers=headers, data=payload)
         ext = file_type.split('/')[-1].lower()
         if ext == 'jpeg':
             ext = 'jpg'
