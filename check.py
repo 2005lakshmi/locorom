@@ -60,7 +60,7 @@ def get_github_files(path):
         
         if response.status_code == 403:  # Rate limited
             st.session_state.current_token_index = (
-                (st.session_state.current_token_index + 1) % len(GITHUB_TOKENS)
+                (st.session_state.current_token_index + 1) % len(GITHUB_TOKENS) )
             HEADERS["Authorization"] = f"token {GITHUB_TOKENS[st.session_state.current_token_index]}"
             continue
             
