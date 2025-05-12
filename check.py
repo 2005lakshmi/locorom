@@ -19,11 +19,11 @@ def get_active_github_token():
         if resp.status_code == 200:
             code_scan = resp.json()["resources"]["code_scanning_upload"]
             if code_scan["remaining"] > 0:
-                return token
+                return token, code_scan["remaining"]
     return None  # All tokens exhausted
 
 # On app load
-GITHUB_TOKEN = get_active_github_token()
+GITHUB_TOKEN,TOKEN_REMAIN = get_active_github_token()
 
 
 GITHUB_REPO = "2005lakshmi/locorom"
@@ -626,7 +626,7 @@ def update_subfolder_thumbnail(room_name, subfolder_name, new_thumbnail):
 
 # Admin Page
 def admin_page():
-    st.write(f"Current active token: {GITHUB_TOKEN}")
+    st.write(f"Current active token: {GITHUB_TOKEN}, Remaining : {TOKEN_REMAIN}")
     st.title("Admin Panel")
     tab1, tab2, tab3, tab4, tab5 , tab6 = st.tabs(["Create Room", "Add Content", "Manage Subfolders", "Manage Files", "🚮 Delete Rooms","📷 Change Subfolder Thumbnail"])
 
