@@ -12,7 +12,11 @@ CURRENT_TOKEN_INDEX = 0
 
 GITHUB_REPO = "2005lakshmi/locorom"
 BASE_PATH = "Rooms"
-HEADERS = {"Authorization": f"token {GITHUB_TOKEN}"}
+#HEADERS = {"Authorization": f"token {GITHUB_TOKEN}"}
+HEADERS = {
+    "Authorization": f"token {st.secrets.github.tokens[st.session_state.current_token_index]}",
+    "Accept": "application/vnd.github+json"
+}
 
 
 
