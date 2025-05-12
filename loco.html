@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LOCOROM Navigation</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+      background: #f0f2f5;
+      overflow-x: hidden;
+    }
+    body {
+      min-height: 100vh;
+    }
+
+    /* HEADER */
+    .header-container {
+      position: relative;
+      background: white;
+      padding: 0.8rem 2rem;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      overflow: hidden;
+      z-index: 10;
+      width: 100vw;
+      left: 0;
+    }
+    .header-container::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background:
+        url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><path d="M20,50 Q50,20 80,50 T20,50" fill="none" stroke="%23ced4da" stroke-width="0.5"/></svg>') repeat;
+      opacity: 0.3;
+      z-index: 1;
+    }
+    .header-container h1 {
+      font-family: 'Times New Roman', serif;
+      font-size: 2.5rem;
+      font-weight: normal;
+      letter-spacing: 0.05em;
+      color: #212529;
+      position: relative;
+      z-index: 2;
+      text-shadow: 1px 1px 4px rgba(0,0,0,0.05);
+      margin: 0;
+      padding: 0.1rem 0;
+    }
+
+    /* IFRAME */
+    .iframe-container {
+      width: 100vw;
+      height: calc(100vh - 70px); /* 70px is approx header height */
+      position: relative;
+      z-index: 1;
+      left: 0;
+    }
+    .iframe-container iframe {
+      width: 100vw;
+      height: 100%;
+      border: none;
+      display: block;
+      left: 0;
+    }
+
+    /* BOTTOM AD - reduced by 15% */
+    .bottom-ad {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 85vw; /* reduced from 100vw */
+      background: white;
+      box-shadow: 0 -4px 12px rgba(0,0,0,0.15);
+      border-radius: 0;
+      padding: 12.75px 42.5px 12.75px 12.75px; /* 15% smaller padding */
+      display: flex;
+      align-items: center;
+      gap: 12.75px; /* 15% smaller gap */
+      min-width: 255px; /* 300px * 0.85 */
+      max-width: 85vw; /* reduced max width */
+      cursor: move;
+      z-index: 9999;
+      user-select: none;
+      transition: box-shadow 0.2s;
+    }
+    .bottom-ad img {
+      width: 68px; /* 80px * 0.85 */
+      height: auto;
+      border-radius: 4px;
+      pointer-events: none;
+      user-select: none;
+    }
+    .bottom-ad-text {
+      flex: 1;
+      font-size: 0.765rem; /* 0.9rem * 0.85 */
+      color: #333;
+    }
+    .bottom-ad-text .highlight {
+      color: #0066cc;
+      font-weight: bold;
+    }
+    .close-btn {
+      position: absolute;
+      top: 7px; /* 8px * 0.85 */
+      right: 17px; /* 20px * 0.85 */
+      width: 20.4px; /* 24px * 0.85 */
+      height: 20.4px; /* 24px * 0.85 */
+      background: #ec6b5e;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      font-size: 15.3px; /* 18px * 0.85 */
+      line-height: 20.4px;
+      text-align: center;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.2s;
+      z-index: 10000;
+    }
+    .close-btn:hover {
+      background: #c0392b;
+    }
+    .bottom-ad.dragging {
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      opacity: 0.95;
+    }
+
+    @media (max-width: 500px) {
+      .header-container h1 {
+        font-size: 1.5rem;
+      }
+      .bottom-ad {
+        min-width: 187px; /* 220px * 0.85 */
+        padding: 8.5px 34px 8.5px 8.5px;
+      }
+      .bottom-ad img {
+        width: 42.5px; /* 50px * 0.85 */
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <div class="header-container">
+    <h1>LOCOROM</h1>
+  </div>
+
+  <!-- FULL WIDTH/HEIGHT IFRAME BELOW HEADER -->
+  <div class="iframe-container">
+    <iframe 
+      src="https://locorom.streamlit.app/?embedded=true" 
+      title="LOCOROM Interface" 
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+      allowfullscreen>
+    </iframe>
+  </div>
+
+  <!-- MOVABLE, CLOSABLE AD AT BOTTOM -->
+  <div class="bottom-ad" id="bottomAd" role="dialog" aria-label="Notification">
+    <img src="https://i.ibb.co/N25rht9L/Screenshot-2025-05-01-161830.png" alt="Notification" />
+    <div class="bottom-ad-text">
+      If you see <span class="highlight">"Yes, get this app back up!"</span>, then <strong style="color:red;">Click it</strong> and wait
+    </div>
+    <button class="close-btn" id="closeBtn" aria-label="Close notification">&times;</button>
+  </div>
+
+  <script>
+    (function() {
+      const ad = document.getElementById('bottomAd');
+      const closeBtn = document.getElementById('closeBtn');
+
+      // Close button hides the ad
+      closeBtn.addEventListener('click', () => {
+        ad.style.display = 'none';
+      });
+
+      // Drag functionality
+      let isDragging = false;
+      let startX, startY, initialLeft, initialTop;
+
+      ad.addEventListener('mousedown', dragStart);
+      ad.addEventListener('touchstart', dragStart);
+
+      function dragStart(e) {
+        if (e.target === closeBtn) return; // Don't drag when clicking close
+        e.preventDefault();
+        isDragging = true;
+        ad.classList.add('dragging');
+
+        const rect = ad.getBoundingClientRect();
+
+        if (e.type === 'touchstart') {
+          startX = e.touches[0].clientX;
+          startY = e.touches[0].clientY;
+        } else {
+          startX = e.clientX;
+          startY = e.clientY;
+        }
+        initialLeft = rect.left;
+        initialTop = rect.top;
+
+        document.addEventListener('mousemove', dragMove);
+        document.addEventListener('touchmove', dragMove, {passive:false});
+        document.addEventListener('mouseup', dragEnd);
+        document.addEventListener('touchend', dragEnd);
+      }
+
+      function dragMove(e) {
+        if (!isDragging) return;
+        e.preventDefault();
+
+        let clientX, clientY;
+        if (e.type === 'touchmove') {
+          clientX = e.touches[0].clientX;
+          clientY = e.touches[0].clientY;
+        } else {
+          clientX = e.clientX;
+          clientY = e.clientY;
+        }
+
+        let newLeft = initialLeft + (clientX - startX);
+        let newTop = initialTop + (clientY - startY);
+
+        // Constrain within viewport horizontally
+        const adRect = ad.getBoundingClientRect();
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+
+        if (newLeft < 0) newLeft = 0;
+        if (newLeft + adRect.width > windowWidth) newLeft = windowWidth - adRect.width;
+
+        // Constrain vertically (keep it visible)
+        if (newTop < 0) newTop = 0;
+        if (newTop + adRect.height > windowHeight) newTop = windowHeight - adRect.height;
+
+        ad.style.left = newLeft + 'px';
+        ad.style.top = newTop + 'px';
+        ad.style.bottom = 'auto';
+        ad.style.transform = ''; // reset translateX(-50%) when dragging
+      }
+
+      function dragEnd() {
+        isDragging = false;
+        ad.classList.remove('dragging');
+        document.removeEventListener('mousemove', dragMove);
+        document.removeEventListener('touchmove', dragMove);
+        document.removeEventListener('mouseup', dragEnd);
+        document.removeEventListener('touchend', dragEnd);
+      }
+    })();
+  </script>
+
+</body>
+</html>
