@@ -1,40 +1,45 @@
 import streamlit as st
 import os
 
-# Set title
+# Show title
 st.title("📁 My Repository Files")
 
-# Get the folder where this script is
-folder = os.path.dirname(__file__)
-print(folder)
+# 👉 Step 1: Show where we are (for debugging)
+st.write("### 🔍 Debug Info")
+folder = os.path.dirname(__file__) if __file__ else "."
+st.write(f"Script folder: `{folder}`")
 
-# List all files in this folder and subfolders
+# List all files in the current directory and below
+found_files = []
+
 for root, dirs, files in os.walk(folder):
-    # Skip hidden folders like __pycache__, .git, etc.
-    if '/.' in root or '\\.' in root:
-        continue
-
-    # Remove hidden folders from listing
+    # 👉 Skip hidden folders (.git, __pycache__, etc.)
     dirs[:] = [d for d in dirs if not d.startswith(".")]
-
-    # Show current folder
-    relative_path = os.path.relpath(root, folder)
-    if relative_path == ".":
-        st.subheader("Root")
-    else:
-        st.subheader(f"Folder: {relative_path}")
-
-    # Show files
+    
     for file in files:
+        # 👉 Skip hidden/system files (optional)
         if file.startswith("."):
-            continue  # Skip hidden files
+            continue
+        # Build relative path
+        rel_path = os.path.relpath(os.path.join(root, file), folder)
+        found_files.append(rel_path)
 
-        # Make a button for each file
-        if st.button(f"📄 {file}", key=file):
+# 👉 Step 2: Show what we found
+st.write(f"Found {len(found_files)} visible files:")
+
+if not found_files:
+    st.warning("No files found! Maybe everything is hidden or path is wrong.")
+else:
+    # Sort files to show root ones first
+    found_files.sort()
+
+    for rel_path in found_files:
+        # Button to show content
+        if st.button(f"📄 {rel_path}", key=rel_path):
             try:
-                # Read and show file content
-                with open(os.path.join(root, file), "r", encoding="utf-8") as f:
+                full_path = os.path.join(folder, rel_path)
+                with open(full_path, "r", encoding="utf-8") as f:
                     content = f.read()
-                st.text_area("Content:", content, height=300)
+                st.text_area("File Content", content, height=300)
             except Exception as e:
-                st.error(f"Could not read file: {e}")
+                st.error(f"Error reading {rel_path}: {e}")
