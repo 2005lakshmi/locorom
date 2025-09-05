@@ -6,6 +6,7 @@ st.title("📁 My Repository Files")
 
 # Get the folder where this script is
 folder = os.path.dirname(__file__)
+print(folder)
 
 # List all files in this folder and subfolders
 for root, dirs, files in os.walk(folder):
