@@ -7,7 +7,7 @@ import time
 import streamlit.components.v1 as components
 import string
 # Configuration
-LOCAL_REPO_PATH = Path("./locorom")  # Update if needed
+
 GITHUB_TOKENS = st.secrets["github"]["tokens"]
 def get_active_github_token():
     for token in GITHUB_TOKENS:
@@ -34,34 +34,10 @@ HEADERS = {"Authorization": f"token {GITHUB_TOKEN}"}
 # Add this to the get_github_files function
 
 
-from pathlib import Path
-
-# Adjust this to where your locorom repo is cloned
-LOCAL_REPO_PATH = Path("./locorom")  # or absolute path like /home/user/locorom
-
-def get_local_files(room_name):
-    """
-    Get list of files and directories inside the room folder: locorom/Rooms/{room_name}
-    Returns a list of dicts mimicking GitHub API structure for compatibility.
-    """
-    room_path = LOCAL_REPO_PATH / "Rooms" / room_name
-
-    if not room_path.exists() or not room_path.is_dir():
-        return []  # Return empty list if room doesn't exist or isn't a directory
-
-    items = []
-    for item in room_path.iterdir():
-        item_info = {
-            "name": item.name,
-            "path": str(item.relative_to(LOCAL_REPO_PATH)),  # e.g., "Rooms/living_room/image.jpg"
-            "type": "dir" if item.is_dir() else "file",
-            # Optional fields you may need later:
-            # "size": item.stat().st_size if item.is_file() else 0,
-            # "download_url": f"/files/{item.relative_to(LOCAL_REPO_PATH)}"  # if serving files via web
-        }
-        items.append(item_info)
-
-    return items
+def get_github_files(path):
+    url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{path}"
+    response = requests.get(url, headers=HEADERS)
+    return response.json() if response.status_code == 200 else []
 
 def create_room_folder(room_name):
     folder_path = f"{BASE_PATH}/{room_name}"
@@ -119,17 +95,14 @@ def create_subfolder(room_name, sub_name, thumbnail_file, info_content):
         return False
 
 def get_subfolder_info(room_name, subfolder):
-    """Get info.txt content from a subfolder inside a room (local filesystem version)"""
-    info_file_path = LOCAL_REPO_PATH / "Rooms" / room_name / subfolder / "info.txt"
-
-    try:
-        if info_file_path.exists() and info_file_path.is_file():
-            with open(info_file_path, 'r', encoding='utf-8') as f:
-                return f.read().strip()
-        return ""  # File doesn't exist → return empty string
-    except Exception:
-        # Silently fail and return empty string, as original function does
-        return ""
+    info_path = f"{BASE_PATH}/{room_name}/{subfolder}/info.txt"
+    response = requests.get(
+        f"https://api.github.com/repos/{GITHUB_REPO}/contents/{info_path}",
+        headers=HEADERS
+    )
+    if response.status_code == 200:
+        return base64.b64decode(response.json()['content']).decode()
+    return ""
 
 def update_subfolder_info(room_name, subfolder, content):
     info_path = f"{BASE_PATH}/{room_name}/{subfolder}/info.txt"
@@ -221,17 +194,7 @@ def next_alphabetical_filename(existing_files):
         
         # If all characters were 'z' (e.g., 'zz'), return 'aaa'
         return 'a' * (len(last_char_list) + 1)
-def get_all_rooms():
-    """Get list of all room folder names under locorom/Rooms/"""
-    rooms_path = LOCAL_REPO_PATH / "Rooms"
-    if not rooms_path.exists() or not rooms_path.is_dir():
-        return []  # Return empty if Rooms folder missing
 
-    rooms = []
-    for item in rooms_path.iterdir():
-        if item.is_dir():  # Only include directories (rooms)
-            rooms.append(item.name)
-    return rooms
 def upload_room_file(room, uploaded_file, file_type, subfolder=None):
     """Upload file to room or subfolder with alphabetical filenames"""
     try:
@@ -268,20 +231,19 @@ def upload_room_file(room, uploaded_file, file_type, subfolder=None):
 
         
 def get_room_info(room_name):
-    """Get room information from info.txt (local filesystem version)"""
-    if not room_name:  # Handles None, empty string, etc.
-        return "Room name not specified"
-
-    info_file_path = LOCAL_REPO_PATH / "Rooms" / room_name / "info.txt"
-
+    """Get room information from info.txt"""
+    info_path = f"{BASE_PATH}/{room_name}/info.txt"
     try:
-        if info_file_path.exists() and info_file_path.is_file():
-            with open(info_file_path, 'r', encoding='utf-8') as f:
-                return f.read().strip()
-        else:
-            return "No information available"
+        response = requests.get(
+            f"https://api.github.com/repos/{GITHUB_REPO}/contents/{info_path}",
+            headers=HEADERS
+        )
+        if response.status_code == 200:
+            content = base64.b64decode(response.json()['content']).decode()
+            return content
+        return "No information available"
     except Exception as e:
-        print(f"Error reading room info: {e}")
+        st.error(f"Error fetching room info: {str(e)}")
         return "Information unavailable"
 
 def delete_file(file_path, sha):
@@ -307,8 +269,8 @@ def display_main_content(room_name):
     
     # Main Area Section
     #st.markdown("### From Point:")
-    #main_files = get_github_files(f"{BASE_PATH}/{room_name}")
-    get_local_files(room_name)
+    main_files = get_github_files(f"{BASE_PATH}/{room_name}")
+    
     # Filter out info.txt and include only media files
     main_media = [f for f in main_files 
                  if f['name'] != 'info.txt' 
@@ -1024,24 +986,13 @@ def default_page():
         st.rerun()
         return
 
-    rooms = get_all_rooms()
-    st.write("DEBUG: All rooms:", rooms)  # 👈 Keep this until it works
-    
-    # Show all rooms if search is empty/whitespace
-    if not search_term or search_term.strip() == "":
-        filtered_rooms = rooms
-    else:
-        search_clean = search_term.lower().strip()
-        filtered_rooms = [room for room in rooms if search_clean in room.lower()]
-    
+    # Get filtered rooms
+    rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
+    filtered_rooms = [room for room in rooms if search_term in room.lower()]
+
     if not filtered_rooms:
-        st.info("No rooms found matching your search.")
-    else:
-        st.write(f"Found {len(filtered_rooms)} room(s):")
-        for room in filtered_rooms:
-            if st.button(room, key=room):  # key avoids duplicate key error
-                st.session_state.selected_room = room
-                st.session_state.page = "Room View"
+        st.error("No rooms found" if search_term else "Please enter room number to search..!")
+        return
 
     # Select room
     selected_room = st.radio("Select Room", filtered_rooms)
