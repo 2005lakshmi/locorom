@@ -269,6 +269,9 @@ def upload_room_file(room, uploaded_file, file_type, subfolder=None):
         
 def get_room_info(room_name):
     """Get room information from info.txt (local filesystem version)"""
+    if not room_name:  # Handles None, empty string, etc.
+        return "Room name not specified"
+
     info_file_path = LOCAL_REPO_PATH / "Rooms" / room_name / "info.txt"
 
     try:
@@ -278,9 +281,7 @@ def get_room_info(room_name):
         else:
             return "No information available"
     except Exception as e:
-        # If you're in a Streamlit app, you might want to show error in UI
-        # Otherwise, just log or print
-        print(f"Error reading room info: {e}")  # or use logging
+        print(f"Error reading room info: {e}")
         return "Information unavailable"
 
 def delete_file(file_path, sha):
