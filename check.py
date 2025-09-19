@@ -34,10 +34,34 @@ HEADERS = {"Authorization": f"token {GITHUB_TOKEN}"}
 # Add this to the get_github_files function
 
 
-def get_github_files(path):
-    url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{path}"
-    response = requests.get(url, headers=HEADERS)
-    return response.json() if response.status_code == 200 else []
+from pathlib import Path
+
+# Adjust this to where your locorom repo is cloned
+LOCAL_REPO_PATH = Path("./locorom")  # or absolute path like /home/user/locorom
+
+def get_local_files(room_name):
+    """
+    Get list of files and directories inside the room folder: locorom/Rooms/{room_name}
+    Returns a list of dicts mimicking GitHub API structure for compatibility.
+    """
+    room_path = LOCAL_REPO_PATH / "Rooms" / room_name
+
+    if not room_path.exists() or not room_path.is_dir():
+        return []  # Return empty list if room doesn't exist or isn't a directory
+
+    items = []
+    for item in room_path.iterdir():
+        item_info = {
+            "name": item.name,
+            "path": str(item.relative_to(LOCAL_REPO_PATH)),  # e.g., "Rooms/living_room/image.jpg"
+            "type": "dir" if item.is_dir() else "file",
+            # Optional fields you may need later:
+            # "size": item.stat().st_size if item.is_file() else 0,
+            # "download_url": f"/files/{item.relative_to(LOCAL_REPO_PATH)}"  # if serving files via web
+        }
+        items.append(item_info)
+
+    return items
 
 def create_room_folder(room_name):
     folder_path = f"{BASE_PATH}/{room_name}"
@@ -95,14 +119,17 @@ def create_subfolder(room_name, sub_name, thumbnail_file, info_content):
         return False
 
 def get_subfolder_info(room_name, subfolder):
-    info_path = f"{BASE_PATH}/{room_name}/{subfolder}/info.txt"
-    response = requests.get(
-        f"https://api.github.com/repos/{GITHUB_REPO}/contents/{info_path}",
-        headers=HEADERS
-    )
-    if response.status_code == 200:
-        return base64.b64decode(response.json()['content']).decode()
-    return ""
+    """Get info.txt content from a subfolder inside a room (local filesystem version)"""
+    info_file_path = LOCAL_REPO_PATH / "Rooms" / room_name / subfolder / "info.txt"
+
+    try:
+        if info_file_path.exists() and info_file_path.is_file():
+            with open(info_file_path, 'r', encoding='utf-8') as f:
+                return f.read().strip()
+        return ""  # File doesn't exist → return empty string
+    except Exception:
+        # Silently fail and return empty string, as original function does
+        return ""
 
 def update_subfolder_info(room_name, subfolder, content):
     info_path = f"{BASE_PATH}/{room_name}/{subfolder}/info.txt"
@@ -231,19 +258,19 @@ def upload_room_file(room, uploaded_file, file_type, subfolder=None):
 
         
 def get_room_info(room_name):
-    """Get room information from info.txt"""
-    info_path = f"{BASE_PATH}/{room_name}/info.txt"
+    """Get room information from info.txt (local filesystem version)"""
+    info_file_path = LOCAL_REPO_PATH / "Rooms" / room_name / "info.txt"
+
     try:
-        response = requests.get(
-            f"https://api.github.com/repos/{GITHUB_REPO}/contents/{info_path}",
-            headers=HEADERS
-        )
-        if response.status_code == 200:
-            content = base64.b64decode(response.json()['content']).decode()
-            return content
-        return "No information available"
+        if info_file_path.exists() and info_file_path.is_file():
+            with open(info_file_path, 'r', encoding='utf-8') as f:
+                return f.read().strip()
+        else:
+            return "No information available"
     except Exception as e:
-        st.error(f"Error fetching room info: {str(e)}")
+        # If you're in a Streamlit app, you might want to show error in UI
+        # Otherwise, just log or print
+        print(f"Error reading room info: {e}")  # or use logging
         return "Information unavailable"
 
 def delete_file(file_path, sha):
@@ -270,7 +297,7 @@ def display_main_content(room_name):
     # Main Area Section
     #st.markdown("### From Point:")
     main_files = get_github_files(f"{BASE_PATH}/{room_name}")
-    
+    get_local_files(room_name)
     # Filter out info.txt and include only media files
     main_media = [f for f in main_files 
                  if f['name'] != 'info.txt' 
