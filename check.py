@@ -307,7 +307,7 @@ def display_main_content(room_name):
     
     # Main Area Section
     #st.markdown("### From Point:")
-    main_files = get_github_files(f"{BASE_PATH}/{room_name}")
+    #main_files = get_github_files(f"{BASE_PATH}/{room_name}")
     get_local_files(room_name)
     # Filter out info.txt and include only media files
     main_media = [f for f in main_files 
