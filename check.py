@@ -1018,7 +1018,7 @@ def default_page():
     search_term = st.text_input("**Search Room**", "", placeholder="example., 415B").strip().lower()
     
     # Check for admin password
-       if search_term == st.secrets["general"]["password"]:
+    if search_term == st.secrets["general"]["password"]:
         st.session_state.page = "Admin Page"
         st.rerun()
         return
