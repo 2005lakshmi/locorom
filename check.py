@@ -7,7 +7,7 @@ import time
 import streamlit.components.v1 as components
 import string
 # Configuration
-
+LOCAL_REPO_PATH = Path("./locorom")  # Update if needed
 GITHUB_TOKENS = st.secrets["github"]["tokens"]
 def get_active_github_token():
     for token in GITHUB_TOKENS:
@@ -221,7 +221,17 @@ def next_alphabetical_filename(existing_files):
         
         # If all characters were 'z' (e.g., 'zz'), return 'aaa'
         return 'a' * (len(last_char_list) + 1)
+def get_all_rooms():
+    """Get list of all room folder names under locorom/Rooms/"""
+    rooms_path = LOCAL_REPO_PATH / "Rooms"
+    if not rooms_path.exists() or not rooms_path.is_dir():
+        return []  # Return empty if Rooms folder missing
 
+    rooms = []
+    for item in rooms_path.iterdir():
+        if item.is_dir():  # Only include directories (rooms)
+            rooms.append(item.name)
+    return rooms
 def upload_room_file(room, uploaded_file, file_type, subfolder=None):
     """Upload file to room or subfolder with alphabetical filenames"""
     try:
@@ -1012,13 +1022,13 @@ def default_page():
         st.session_state.page = "Admin Page"
         st.rerun()
         return
-
-    # Get filtered rooms
-    rooms = [item['name'] for item in get_github_files(BASE_PATH) if item['type'] == 'dir']
-    filtered_rooms = [room for room in rooms if search_term in room.lower()]
-
+    
+    # Get filtered rooms — now using local filesystem
+    rooms = get_all_rooms()  # ✅ Replaces GitHub API call
+    filtered_rooms = [room for room in rooms if search_term.lower() in room.lower()]
+    
     if not filtered_rooms:
-        st.error("No rooms found" if search_term else "Please enter room number to search..!")
+        st.info("No rooms found matching your search.")
         return
 
     # Select room
