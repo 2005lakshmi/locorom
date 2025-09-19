@@ -1018,18 +1018,29 @@ def default_page():
     search_term = st.text_input("**Search Room**", "", placeholder="example., 415B").strip().lower()
     
     # Check for admin password
-    if search_term == st.secrets["general"]["password"]:
+       if search_term == st.secrets["general"]["password"]:
         st.session_state.page = "Admin Page"
         st.rerun()
         return
+
+    rooms = get_all_rooms()
+    st.write("DEBUG: All rooms:", rooms)  # 👈 Keep this until it works
     
-    # Get filtered rooms — now using local filesystem
-    rooms = get_all_rooms()  # ✅ Replaces GitHub API call
-    filtered_rooms = [room for room in rooms if search_term.lower() in room.lower()]
+    # Show all rooms if search is empty/whitespace
+    if not search_term or search_term.strip() == "":
+        filtered_rooms = rooms
+    else:
+        search_clean = search_term.lower().strip()
+        filtered_rooms = [room for room in rooms if search_clean in room.lower()]
     
     if not filtered_rooms:
         st.info("No rooms found matching your search.")
-        return
+    else:
+        st.write(f"Found {len(filtered_rooms)} room(s):")
+        for room in filtered_rooms:
+            if st.button(room, key=room):  # key avoids duplicate key error
+                st.session_state.selected_room = room
+                st.session_state.page = "Room View"
 
     # Select room
     selected_room = st.radio("Select Room", filtered_rooms)
